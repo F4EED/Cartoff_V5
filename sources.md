@@ -10,7 +10,7 @@ Dernière mise à jour : juillet 2026.
 
 | Élément | Source | Licence / remarques |
 |---------|--------|----------------------|
-| `pmtiles/loire.pmtiles` | Tuiles vectorielles au format [PMTiles](https://github.com/protomaps/PMTiles), affichées via [protomaps-leaflet](https://github.com/protomaps/PMTiles) (`flavor: light`, `lang: fr`, **`levelDiff: 0`**) | Données cartographiques issues d'[OpenStreetMap](https://www.openstreetmap.org/) ; zoom **9–15** uniquement. Approche inspirée de [map.gaulix.fr](https://github.com/valentintintin) (Valentin Saugnier). Fichier découpé pour GitHub — voir `pmtiles/README.md`. |
+| `pmtiles/*.pmtiles` | Tuiles vectorielles au format [PMTiles](https://github.com/protomaps/PMTiles), affichées via [protomaps-leaflet](https://github.com/protomaps/PMTiles) (`flavor: light`, `lang: fr`, **`levelDiff: 0`**, `maxDataZoom` lu dans l’archive) | Données [OpenStreetMap](https://www.openstreetmap.org/). Défaut : `loire.pmtiles` (zoom tuiles **9–15**, surzoom carte jusqu’à 18). Autres archives : menu **Fond de carte**, ou extraction d’une zone (`extract.py`, repris de [F4EED/pmtiles](https://github.com/F4EED/pmtiles)). Fichier Loire découpé pour GitHub — voir `pmtiles/README.md`. |
 | Tuiles OSM en ligne (alternative commentée) | [OpenStreetMap](https://www.openstreetmap.org/) — `tile.openstreetmap.org` | Non utilisée par défaut ; présente en commentaire dans `index.html`. |
 
 **Serveur requis :** `serve.py` ou `start.bat` (HTTP Range). Voir `pmtiles/README.md` pour `levelDiff: 0` et le dépannage fond gris.

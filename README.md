@@ -1,350 +1,325 @@
-# 🚨 Cartoff
+# Cartoff
 
 ## Comprendre le terrain, décider plus vite.
 
 ![Solution de cartographie Cartoff](images/Solution_de_cartographie_Cartoff.png)
 
-**Cartoff** est un outil de cartographie open source dédié à la **gestion de crise**, conçu pour fonctionner **100 % hors ligne**.
+**Cartoff** est une cartographie open source pour la **gestion de crise**, prévue pour tourner **hors ligne** une fois les données préparées.
 
-> ✅ Pensé pour les environnements dégradés  
-> ✅ Fonctionne sans aucune connexion réseau  
-> ✅ Basé sur Leaflet  
+Ce dépôt réunit deux projets :
 
----
+| Projet d’origine | Ce qu’il apporte ici |
+|------------------|----------------------|
+| [F4EED/cartoff](https://github.com/F4EED/cartoff) | La carte opérationnelle : calques du département de la Loire (42), coordonnées, DFCI, altitude, constats, missions SAR, imports locaux. |
+| [F4EED/pmtiles](https://github.com/F4EED/pmtiles) | Le chargement des archives PMTiles et leur usage : liste des fonds, lecture de l’en-tête, HTTP Range, extraction d’une zone en quatre clics, aperçu France pour choisir l’emprise. |
 
-## 🧪 À propos du projet
+Le fond opérationnel par défaut reste **la Loire** (`loire.pmtiles`). Les calques GeoJSON, le carroyage DFCI et le MNT Copernicus restent ceux du **département 42**, même si un autre fond est affiché. Choisir une nouvelle zone ouvre temporairement un aperçu de la France (réseau routier et villes principales), le temps de poser les quatre points.
 
-Cartoff est avant tout un **POC (Proof of Concept)**.
-
-👉 Objectif initial :  
-explorer les possibilités de **Leaflet** pour créer un outil de cartographie utilisable en conditions réelles de crise.
-
-Au fil des expérimentations, le projet a évolué vers un cas d’usage concret :
-
-💥 **la gestion de crise en environnement sans connectivité**
+> Pensé pour les environnements dégradés.  
+> Après préparation, la carte, les constats et les missions fonctionnent sans réseau.  
+> L’extraction d’un nouveau fond, elle, a besoin d’Internet le temps du téléchargement des tuiles.
 
 ---
 
-## 🌍 Pourquoi Cartoff ?
+## Pourquoi Cartoff
 
-En situation de crise (inondation, catastrophe naturelle, incident industriel),  
-les réseaux sont souvent indisponibles.
+En situation de crise (inondation, feu, incident industriel), les réseaux tombent souvent. Les décisions, elles, ne peuvent pas attendre.
 
-👉 Mais les décisions, elles, ne peuvent pas attendre.
+Cartoff fournit une carte opérationnelle simple, disponible sans Internet, utilisable sur le terrain : zones impactées, routes coupées, points critiques, périmètres, recherche de personnes ou d’aéronef.
 
-Cartoff répond à ce besoin :
-
-- fournir une **cartographie opérationnelle**
-- disponible **sans internet**
-- simple, rapide et utilisable sur le terrain
+Le cas de départ est une **crue de la Loire** : visualiser le secteur, poser des constats (point, tronçon, zone) et continuer à se coordonner une fois la connexion perdue.
 
 ---
 
-## 🌊 Cas concret : inondation de la Loire
-
-Crue soudaine :
-
-- 🌊 zones inondées  
-- 🚧 routes coupées  
-- 📡 réseau indisponible  
-
-👉 Les équipes terrain doivent malgré tout :
-- comprendre la situation  
-- se coordonner  
-- continuer à intervenir  
-
-### ✅ Avec Cartoff
-
-- 🗺️ visualiser immédiatement les zones impactées  
-- 🚧 identifier les routes impraticables  
-- 📍 positionner des points critiques (panneaux, tronçons, zones)  
-- 🔲 délimiter des périmètres ou zones inondées en polygone  
-- ⚡ travailler **100 % hors ligne**  
-
-💥 Résultat : décisions plus rapides, meilleure coordination.
-
----
-
-## ⚙️ Fonctionnalités
-
-### Carte et fond
-
-- 🗺️ Fond vectoriel **PMTiles** (OSM, zoom 9–15, emprise Loire) via [protomaps-leaflet](https://github.com/protomaps/PMTiles)
-- 📐 Boîte de coordonnées : WGS84, UTM, **DFCI**, commune au survol, altitude (MNT Copernicus)
-- 🔌 Fonctionnement entièrement offline après préparation des données
-
-### Calques GeoJSON (OSM)
-
-- Calques thématiques du département 42 (urgence, santé, aviation, toponymie, etc.)
-- **Chargement à la demande** : un calque n’est téléchargé que lorsqu’il est coché
-- Rendu **canvas** pour les calques lourds (communes, zones, carroyage DFCI)
-
-### Carroyage DFCI
-
-- Grilles **2 km**, **20 km** et **100 km** (découpe départementale)
-- Chargement lazy ; le calque 2 km (~5 000 mailles) est marqué ⚠ lourd
-- **Recherche par code DFCI** (ex. `HF26H4`, `HF`) dans la section Recherche
-
-### Constats / événements de situation
-
-Calque autonome pour saisir l’état opérationnel sur le terrain :
-
-| Géométrie | Saisie | Exemples de types |
-|-----------|--------|-------------------|
-| **Point** (panneau) | Clic droit → « Point (panneau) » | Accident, route barrée, incendie… |
-| **Tronçon** (ligne) | Clic droit → « Tronçon (ligne) » | Route inondée, travaux, déviation… |
-| **Zone** (polygone) | Clic droit → « Zone (surface) » | Zone inondée, périmètre, incendie… |
-
-- Menu contextuel (clic droit) pour ajouter, modifier, activer/désactiver ou supprimer
-- Dessin ligne / polygone : clics successifs, **Terminer**, **Annuler** ou **Échap**
-- Types définis dans `js/poi-types.js` (panneaux, styles ligne/polygone)
-- Persistance **`localStorage`** (`cartoff_situation_constats`) + **export GeoJSON**
-- Calque chargé à la demande (cocher « Constats / événements »)
-
-### Missions SAR (recherche et sauvetage)
-
-📖 **Guide opérationnel complet : [SAR.md](SAR.md)** (personne, aéronef, intersection DF multi-fixes, export, dépannage)
-
-Section **Missions SAR** pour structurer une opération de recherche :
-
-#### Mission personne (SAR-1)
-
-| Élément | Saisie | Rôles |
-|---------|--------|-------|
-| **Point** | Mode SAR + clic droit ou bouton barre latérale | LKP, Indice, Waypoint |
-| **Polyligne** | Clics + **Terminer** (comme les tronçons constats) | Axe probable |
-| **Polygone** | Clics + **Terminer** (min. 3 points, comme les zones constats) | Fouilles (zone fouillée) |
-
-#### Mission aéronef — DF / balise (SAR-2)
-
-| Élément | Saisie | Rôle |
-|---------|--------|------|
-| **Station DF** | Bouton **Station DF**, clic droit carte ou clic sur la carte | Point `station_df` (marqueur ▲ orange) |
-| **Relèvement** | Bouton **Relèvement**, menu contextuel sur une station, ou clic sur station si plusieurs | Paire de lignes `relevement_df` |
-
-Workflow aéronef :
-
-1. Créer une mission type **Aéronef**, activer **Mode SAR**
-2. Placer une **station DF** (libellé, notes, horodatage optionnel)
-3. Ajouter un **relèvement** : azimut (0–360°, 1 décimale), portée en km (défaut 30 km)
-4. **Aperçu en direct** sur la carte pendant la saisie (lignes réception + réciproque semi-transparentes)
-5. Carte : **ligne réception** (pleine, orange) vers l’azimut saisi ; **ligne réciproque** (pointillée, +180°)
-6. Modifier ou supprimer station / relèvement via panneau ou menu contextuel (suppression station → relèvements liés)
-
-- Création de missions : nom, type **personne** ou **aéronef**
-- Mission active, statut **active** / **clôturée**, suppression
-- Métadonnées par élément : libellé, notes, horodatage automatique (modifiable pour station DF)
-- Symbologie distincte des constats (marqueurs colorés, zone verte remplie, axe violet, DF orange)
-- Persistance **`localStorage`** (`cartoff_sar_missions`) + **export GeoJSON** (mission ou tout)
-- Propriétés GeoJSON : `sar:mission_id`, `sar:role`, `sar:mission_type`, … `sar:fix_index`, `sar:fix_is_best`, `sar:fix_color` (candidats multiples)
-
-#### Mission aéronef — intersection DF (SAR-3)
-
-| Élément | Description |
-|---------|-------------|
-| **Calcul intersection** | Bouton **Calculer intersection** (ou recalcul auto à chaque relèvement) — toutes les paires valides |
-| **Fixe(s) estimé(s)** | Marqueurs numérotés en couleurs distinctes (★ = meilleur candidat) |
-| **Incertitude** | Cercle semi-transparent par candidat (rayon configurable, défaut 2 km) |
-| **Visibilité carte** | Liste à cases à cocher (mode SAR ou affichage actif) — **Tout afficher** / **Tout masquer** |
-| **Qualité** | Angle de coupe au fixe (proche de 90° = meilleur) |
-| **Rapport** | **Exporter rapport SAR** (.txt) ou **Copier rapport** |
-
-Workflow intersection :
-
-1. Placer ≥ 2 stations DF avec relèvements réception (lignes pleines, stations **distinctes**)
-2. Section **Intersection DF (SAR-3)** : ajuster l’incertitude (km) si besoin, cliquer **Calculer intersection**
-3. Cocher/décocher les candidats à superposer ; consulter qualité et paires station/azimut
-4. Exporter le rapport ou la mission GeoJSON (inclut tous les `fixe_estime` + `incertitude_fix`)
-5. **Effacer fixe(s)** si les relèvements changent ; suppression d’une station ou d’un relèvement recalcule ou efface les fixe(s)
-
-- **SAR-3** : intersections géodésiques offline (multi-candidats), `visibleFixIds` par mission dans `localStorage`, export rapport texte (meilleur fixe)
-
-### Import de fichiers locaux
-
-Section **Importer données externes (kml,kmz, geojson)** de la barre latérale — ajout de vos propres données **sans réseau** :
-
-| Format | Extensions | Traitement |
-|--------|------------|------------|
-| **GeoJSON** | `.geojson`, `.json` | `JSON.parse` + validation |
-| **KML** | `.kml` | Conversion client via `@mapbox/togeojson` |
-| **KMZ** | `.kmz` | Décompression `JSZip` puis conversion KML → GeoJSON |
-
-- Sélecteur de fichiers (plusieurs imports possibles)
-- Chaque calque : nom du fichier, case visibilité, bouton supprimer, couleur distincte
-- Option **Zoomer sur le calque à l'import**
-- Persistance **`sessionStorage`** (~4 Mo max) : survit au rechargement de page, perdu à la fermeture de l'onglet
-- Bibliothèques locales : `js/jszip.min.js`, `js/togeojson.js`, `js/file-import.js`
-
-**Limites :** pas de KML 3D / extrusions ; fichiers très volumineux peuvent ralentir la carte ; au-delà de ~4 Mo les imports ne sont plus sauvegardés en session.
-
-### Recherche
-
-Section **Recherche** de la barre latérale :
-
-- Communes (contours OSM)
-- Zones industrielles, sites industriels, zones d’habitation
-- Codes **DFCI** (si un calque DFCI est actif)
-- Constats enregistrés (si le calque situation est actif)
-
-### Performance
-
-- Calques GeoJSON en **lazy load** (y compris constats et DFCI)
-- Rendu **canvas** pour polygones denses (communes, DFCI, zones OSM)
-- Simplification géométrique (`smoothFactor`) sur les gros calques
-- Debounce des coordonnées au survol (`COORDS_DEBOUNCE_MS`)
-- Animations de zoom désactivées pour limiter les saccades
-
----
-
-## 🚨 Cas d’usage
-
-Cartoff est conçu pour :
-
-- 🚒 Services de secours (pompiers, sécurité civile)
-- 🏛️ Collectivités locales
-- 🌍 ONG / humanitaire
-- 🛠️ Cellules de gestion de crise
-- 🧭 Équipes terrain sans connectivité
-
----
-
-## 🧠 Philosophie
-
-Cartoff repose sur trois principes :
-
-👉 **Simplicité**  
-👉 **Robustesse en conditions dégradées**  
-👉 **Exploration et ouverture (open source)**  
-
----
-
-## 🚀 Démarrage
+## Démarrage
 
 ```bash
 git clone https://github.com/F4EED/cartoff.git
 cd cartoff
 
-# Reconstituer le fond de carte PMTiles (morceaux versionnés → loire.pmtiles)
+# Reconstituer le fond Loire (morceaux versionnés → pmtiles/loire.pmtiles)
 python scripts/unpack_large_file.py
 
-# Autre région : voir pmtiles/README.md#créer-un-pmtiles-pour-votre-région
+# Windows : libère le port 8000, reconstruit loire.pmtiles s’il manque, lance le serveur
+start.bat
 
-# (Optionnel) Grille d'altitude Copernicus — voir elevation/README.md
-pip install rasterio numpy shapely
-python scripts/build_elevation_loire.py
-
-# Serveur web local (HTTP Range requis pour PMTiles, port 8000 par défaut)
-# Windows : double-clic sur start.bat (arrête les anciens serveurs puis lance serve.py)
+# Ou, à la main (HTTP Range requis, port 8000 par défaut)
 python serve.py -p 8000
 ```
 
-👉 Ouvrir **http://localhost:8000** dans le navigateur (pas `index.html` en `file://`).
+Ouvrir **http://localhost:8000/** dans le navigateur.
 
-📖 Depuis la carte, le bouton **Documentation** (panneau latéral) ouvre la documentation complète dans une nouvelle fenêtre (`docs.html` — `readme.html` redirige pour les anciens signets).
+Le binaire **go-pmtiles** (`pmtiles/tools/pmtiles.exe`, v1.31.2) sert uniquement à **créer** une archive. Consulter `loire.pmtiles` ou une archive déjà présente n’en a pas besoin. S’il manque :
+
+```text
+https://github.com/protomaps/go-pmtiles/releases/download/v1.31.2/go-pmtiles_1.31.2_Windows_x86_64.zip
+```
+
+Le placer dans `pmtiles/tools/pmtiles.exe` (ou `pmtiles/tools/pmtiles` sous Linux / macOS).
+
+L’altitude est optionnelle : voir [elevation/README.md](elevation/README.md).
+
+```bash
+pip install rasterio numpy shapely
+python scripts/build_elevation_loire.py
+```
+
+Depuis la carte, le bouton **Documentation** ouvre ce fichier (`docs.html` ; `readme.html` redirige les anciens signets).
 
 ### Serveur obligatoire
 
+Une archive PMTiles est un seul fichier, parfois très gros. Le navigateur n’en lit que les plages d’octets des tuiles visibles (HTTP `Range`, réponse **206**). Le serveur standard de Python ne le fait pas : c’est le rôle de `serve.py`.
+
 | Méthode | HTTP Range | Fond de carte |
 |---------|------------|---------------|
-| `start.bat` ou `python serve.py` | ✅ Oui | ✅ OK |
-| `python -m http.server` | ❌ Non | ❌ Fond gris |
-| Fichier local (`file://`) | ❌ Non | ❌ Fond gris |
+| `start.bat` ou `python serve.py` | Oui | OK |
+| `python -m http.server` | Non | Fond gris |
+| Fichier local (`file://`) | Non | Fond gris |
 
-`start.bat` (Windows) : libère le port 8000, reconstruit `loire.pmtiles` si absent, puis lance `serve.py`.
-
-### Fond gris malgré le bon serveur ?
-
-Le PMTiles Loire commence au **zoom 9**. Dans `index.html`, `protomapsL.leafletLayer` doit avoir **`levelDiff: 0`** (valeur par défaut de protomaps-leaflet = 1, ce qui demande des tuiles z8 absentes du fichier). Voir [pmtiles/README.md](pmtiles/README.md).
+`serve.py` répond avec l’en-tête `Server: Cartoff/1.0 (PMTiles+Range)`. Avant d’afficher un fond, le client sonde `Range: bytes=0-16383` et exige une réponse 206 avec `Accept-Ranges: bytes`. Sinon un message s’affiche dans la boîte de coordonnées.
 
 ---
 
-## 🔖 Versionnement
+## Fond de carte
 
-Cartoff suit le **semver** (`MAJEUR.MINEUR.PATCH`). La version courante, le hash git court, la date et la date de build sont centralisés dans **`version.json`** à la racine du dépôt.
+### Au démarrage
 
-Exemple (valeurs réelles au moment de la lecture) :
+Le menu **Fond de carte** est rempli par `GET /api/files` (fichiers `pmtiles/*.pmtiles`, du plus récent au plus ancien). S’il existe, **`loire.pmtiles` est affiché** et la vue reste sur la Loire. Sinon, l’archive la plus récente est chargée et la carte s’ajuste à son emprise.
+
+Pour chaque archive, le client lit l’en-tête PMTiles (emprise, `minZoom`, `maxZoom`) :
+
+- `levelDiff: 0` — sans cela, un extrait dont le zoom minimal est 9 demanderait des tuiles z8 absentes, et le fond resterait gris ;
+- `maxDataZoom` pris dans l’en-tête (15 pour le build Protomaps actuel) ;
+- la carte peut **surzoomer jusqu’au niveau 18** : le rendu est vectoriel, les tuiles s’arrêtent à 15 ;
+- le zoom minimal et le déplacement suivent l’emprise de l’archive affichée.
+
+`loire.pmtiles` (~261 Mo, tuiles 9–15, emprise 45,0°–46,5° N × 3,5°–5,0° E) dépasse la limite GitHub. Il est livré en morceaux (`loire.pmtiles.part00N` + manifeste SHA-256) et reconstitué par `scripts/unpack_large_file.py`. Détail : [pmtiles/README.md](pmtiles/README.md).
+
+### Choisir une nouvelle zone
+
+1. **Sélectionner une zone.** La carte quitte l’emprise du fond local. Elle affiche la France : réseau routier Protomaps (le chevelu) et les villes principales (préfectures dès l’aperçu, sous-préfectures en zoomant). Les contours de départements restent en surimpression.
+2. Quatre clics délimitent le secteur. L’ordre est sans importance : les sommets sont réordonnés.
+3. Donner un nom et une plage de zooms, puis **Extraire**.
+4. L’avancement s’affiche dans le panneau. À la fin, le nouveau fichier est proposé dans le menu et affiché.
+5. **Annuler** (ou Échap dans la fenêtre) revient au fond et à la vue précédents.
+
+Hors ligne, ou si le relais vers Protomaps échoue, l’aperçu retombe sur un atlas : départements en aplat et les mêmes villes. On peut encore dessiner la zone ; l’extraction, elle, a besoin du réseau.
+
+Le chevelu n’est pas téléchargé en entier. Le navigateur demande de petites plages d’octets à `GET /pmtiles/overview.pmtiles`. Le serveur les relaie vers le dernier build quotidien Protomaps (`build.protomaps.com`), parce que ce CDN ne renvoie pas d’en-tête CORS lisible depuis `localhost`.
+
+Compter quelques minutes et de l’ordre de 20 à 200 Mo pour un département aux zooms 9–15. Une seule extraction à la fois. La zone est bornée à **12° de côté**. Les zooms de tuiles vont de 0 à **15**.
+
+Les calques Loire (communes, DFCI, altitude, recherche) ne suivent pas le nouveau fond : ils restent ceux du département 42.
+
+### Fichiers et routes
+
+| Chemin | Rôle |
+|--------|------|
+| `js/basemap.js` | Liste, sonde Range, lit l’en-tête, affiche le fond, suspend la vue locale pendant la sélection |
+| `js/zone-overview.js` | Aperçu France (chevelu + villes, atlas en secours) |
+| `js/zone-extract.js` | Quatre clics, fenêtre, suivi du job |
+| `extract.py` | Validation, un job à la fois, appel de go-pmtiles, archives produites dans `pmtiles/` |
+| `serve.py` | Fichiers statiques, HTTP Range, API JSON |
+| `data/france-departements.geojson` | Contours des départements (aperçu de sélection) |
+| `data/france-villes.geojson` | Villes principales de France (aperçu de sélection) |
+| `pmtiles/tools/pmtiles.exe` | CLI go-pmtiles — absente du clone si non téléchargée |
+| `pmtiles/*.pmtiles` | Archives — `loire.pmtiles` est reconstitué, les extraits sont produits sur place |
+
+| Route | Rôle |
+|-------|------|
+| `GET /api/files` | Archives disponibles |
+| `POST /api/extract` | Lance une extraction (202 + identifiant de job) |
+| `GET /api/jobs/<id>` | Avancement |
+| `GET /api/download/<nom>.pmtiles` | Téléchargement du résultat |
+| `GET /pmtiles/overview.pmtiles` | Relais Range vers le build Protomaps (aperçu France) |
+| `GET /pmtiles/<nom>.pmtiles` | Archive locale, avec `Range` |
+
+```
+  Navigateur                         Serveur Python
+  index.html                         serve.py
+  Leaflet · PMTiles · Protomaps
+        |                                  |
+        |  GET /pmtiles/*.pmtiles (Range)  |
+        |  GET /api/files                  |
+        |--------------------------------->|  fichiers locaux
+        |                                  |
+        |  Sélection d'une zone            |
+        |  GET /pmtiles/overview.pmtiles   |
+        |--------------------------------->|  relais Range
+        |                                  |       |
+        |                                  |       v
+        |                                  |  build.protomaps.com
+        |                                  |
+        |  POST /api/extract               |
+        |  GET  /api/jobs/<id>             |
+        |--------------------------------->|  extract.py
+        |                                  |       |
+        |                                  |       v
+        |                                  |  pmtiles/tools/pmtiles.exe
+        |                                  |  (tuiles de la zone seulement)
+        |                                  v
+        |                            pmtiles/<nom>.pmtiles
+```
+
+Les jobs vivent en mémoire : redémarrer le serveur efface l’historique. Les fichiers produits restent dans `pmtiles/`. Il n’y a pas d’authentification : le serveur est prévu pour un poste ou un réseau de confiance (`0.0.0.0`, port 8000).
+
+---
+
+## Carte opérationnelle
+
+Ces fonctions viennent de Cartoff. Elles restent actives quel que soit le fond PMTiles affiché. Les données géographiques livrées avec le dépôt couvrent le **département 42**.
+
+### Coordonnées
+
+Boîte au survol : WGS84, UTM, code **DFCI**, commune, altitude (MNT Copernicus, si `elevation/loire_elev.bin` a été généré).
+
+### Calques GeoJSON (OSM)
+
+Calques thématiques du 42 : urgence, santé, aviation, toponymie, communes, zones industrielles et d’habitation, etc. **Chargement à la demande** (un calque n’est lu que lorsqu’il est coché). Rendu **canvas** pour les calques lourds. Provenance : [sources.md](sources.md).
+
+### Carroyage DFCI
+
+Grilles **2 km**, **20 km** et **100 km**, découpées sur le département. Le calque 2 km (~5 000 mailles) est marqué lourd et n’apparaît qu’à partir du zoom 11. **Recherche par code DFCI** (ex. `HF26H4`, `HF`) dans la section Recherche.
+
+### Constats / événements
+
+| Géométrie | Saisie | Exemples |
+|-----------|--------|----------|
+| Point (panneau) | Clic droit | Accident, route barrée, incendie |
+| Tronçon (ligne) | Clic droit, clics, **Terminer** | Route inondée, déviation |
+| Zone (polygone) | Clic droit, clics, **Terminer** | Zone inondée, périmètre |
+
+Menu contextuel pour ajouter, modifier, activer/désactiver ou supprimer. **Échap** annule un dessin en cours. Types dans `js/poi-types.js`. Persistance `localStorage` (`cartoff_situation_constats`) et **export GeoJSON**. Le calque se charge quand on coche « Constats / événements ».
+
+### Missions SAR
+
+Guide opérationnel : **[SAR.md](SAR.md)**.
+
+**Personne** — points (dernière position connue, indice, repère), polyligne (axe probable), polygone (zone fouillée).
+
+**Aéronef** — station DF (marqueur orange) et relèvement : azimut 0–360°, portée en km (défaut 30). La carte trace la ligne de réception (pleine) et la réciproque (pointillée, +180°), avec aperçu pendant la saisie.
+
+**Intersection** — à partir de deux stations distinctes, calcul des fixes estimés (le meilleur est marqué), cercle d’incertitude (défaut 2 km), liste de visibilité, rapport texte ou GeoJSON.
+
+Persistance `localStorage` (`cartoff_sar_missions`). Propriétés GeoJSON : `sar:mission_id`, `sar:role`, `sar:mission_type`, et pour les fixes `sar:fix_index`, `sar:fix_is_best`, `sar:fix_color`.
+
+### Import local
+
+Section **Importer données externes** : GeoJSON (`.geojson`, `.json`), KML (conversion dans le navigateur), KMZ (décompression puis KML). Chaque calque a un nom, une case de visibilité, une couleur et un bouton supprimer. Option **Zoomer sur le calque à l'import**.
+
+Persistance `sessionStorage` (~4 Mo) : le rechargement de la page conserve les imports, la fermeture de l’onglet les efface. Pas de KML 3D. Les très gros fichiers ralentissent la carte.
+
+### Recherche
+
+Communes, zones industrielles, sites industriels, zones d’habitation, codes DFCI (si un calque DFCI est coché), constats (si le calque situation est coché).
+
+### Affichage
+
+Calques en chargement différé, canvas pour les polygones denses, simplification géométrique sur les gros calques, coordonnées au survol décalées dans le temps, animations de zoom désactivées. Les calques opérationnels restent au-dessus du fond PMTiles.
+
+---
+
+## Cas d’usage
+
+- Services de secours (pompiers, sécurité civile)
+- Collectivités
+- ONG et humanitaire
+- Cellules de crise
+- Équipes terrain sans connectivité
+- Préparer, avant le départ, le fond PMTiles d’un autre secteur que la Loire
+
+---
+
+## Versionnement
+
+Semver (`MAJEUR.MINEUR.PATCH`), centralisé dans **`version.json`**.
 
 ```json
 {
-  "version": "1.0.26",
-  "commit": "efda49f",
-  "date": "2026-07-03",
-  "build": "2026-07-03"
+  "version": "1.0.31",
+  "commit": "c0fe770",
+  "date": "2026-07-05",
+  "build": "2026-07-05"
 }
 ```
 
 | Champ | Rôle |
 |-------|------|
-| `version` | Numéro semver affiché dans l’interface |
-| `commit` | Hash court du commit Git courant |
+| `version` | Numéro affiché dans l’interface |
+| `commit` | Hash court du commit Git |
 | `date` | Date de la dernière mise à jour de version |
-| `build` | Date du dernier build / bump |
+| `build` | Date du dernier bump |
 
-Par défaut, chaque commit **incrémente le patch** (`1.0.26` → `1.0.27`). Les incréments **minor** ou **major** se font manuellement (voir ci-dessous).
+Par défaut, chaque commit **incrémente le patch**. Les sauts **minor** et **major** sont manuels.
 
-### Où la version s’affiche
+La version s’affiche dans `docs.html` (bannière) et dans `index.html` (pied du panneau, `#appVersion`). Les deux pages lisent `version.json` via HTTP.
 
-- **`docs.html`** — bannière en bas du panneau latéral : `Cartoff v…`, commit et date (lecteur Documentation, bouton **Documentation** de la carte)
-- **`index.html`** — pied du panneau latéral : `v… · <commit>` (élément `#appVersion`, sous le logo)
+### Hooks
 
-Les deux pages chargent `version.json` via HTTP ; en `file://` ou sans serveur, l’affichage reste masqué ou indisponible.
-
-### Incrément automatique à chaque commit
-
-Les hooks Git dans **`.githooks/`** appellent `scripts/bump_version.py` :
+`.githooks/` appelle `scripts/bump_version.py` :
 
 | Hook | Rôle |
 |------|------|
-| **`pre-commit`** | Incrémente le semver (patch par défaut), met à jour date/build, **sans** hash de commit (`--skip-commit-hash`), puis `git add version.json` |
-| **`post-commit`** | Écrit le hash du commit fraîchement créé dans `version.json` (`--sync-commit-only`), puis **amende** le commit pour inclure ce hash (une seule fois, garde-fou `.git/cartoff-version-amend`, `--no-verify` pour ne pas relancer pre-commit) |
+| `pre-commit` | Incrémente le semver, met à jour les dates, `git add version.json` |
+| `post-commit` | Écrit le hash du commit dans `version.json`, puis amende une seule fois |
 
-#### Activer les hooks (une fois par clone)
+Activation, une fois par clone :
 
 ```bash
 git config core.hooksPath .githooks
 ```
 
-Git exécute les scripts via **sh** (Git Bash / MSYS sous Windows). Sans cette commande, les hooks du dépôt ne tournent pas et `version.json` n’est pas mis à jour au commit.
-
-#### Python sous Windows
-
-`run-python.sh` résout l’interpréteur dans cet ordre :
-
-1. `py -3` (lanceur Windows, recommandé)
-2. `python` / `python3` dans le `PATH`
-3. **`.git-hook-bin/python.exe`** ou **`python3.exe`** (copie locale optionnelle, non versionnée)
-
-Si `git commit` échoue avec « Python introuvable », installez [Python](https://www.python.org/downloads/) ou suivez [.git-hook-bin/README](.git-hook-bin/README).
+Sous Windows, `run-python.sh` cherche `py -3`, puis `python` / `python3`, puis `.git-hook-bin/python.exe`.
 
 ### Incrément manuel
 
 ```bash
-py -3 scripts/bump_version.py          # patch (+1), Windows recommandé
-python scripts/bump_version.py          # patch (+1)
-set BUMP=minor && py -3 scripts/bump_version.py   # Windows cmd
-$env:BUMP="minor"; py -3 scripts/bump_version.py  # PowerShell
-BUMP=major python scripts/bump_version.py          # Git Bash / Linux
+py -3 scripts/bump_version.py
+python scripts/bump_version.py
 ```
 
-| Variable `BUMP` | Effet (ex. depuis `1.2.3`) |
-|-----------------|------------------------------|
-| *(absent)* ou `patch` | `1.2.4` |
+| Variable `BUMP` | Depuis `1.2.3` |
+|-----------------|----------------|
+| absente ou `patch` | `1.2.4` |
 | `minor` | `1.3.0` |
 | `major` | `2.0.0` |
 
-Création initiale de `version.json` **sans** incrément : `py -3 scripts/bump_version.py --init`
+PowerShell : `$env:BUMP="minor"; py -3 scripts/bump_version.py`
 
-Options réservées aux hooks : `--skip-commit-hash` (pre-commit), `--sync-commit-only` et `--commit-matches-head` (post-commit).
+Création initiale sans incrément : `py -3 scripts/bump_version.py --init`
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 | Fichier | Contenu |
 |---------|---------|
-| **[Versionnement](#-versionnement)** | Semver, `version.json`, hooks `.githooks`, bump manuel, affichage dans l’app |
-| **[SAR.md](SAR.md)** | **Guide opérationnel Missions SAR** (personne, DF aéronef, SAR-3, export, dépannage) |
-| [sources.md](sources.md) | Provenance des données, calques, constats, DFCI, SAR technique |
-| [pmtiles/README.md](pmtiles/README.md) | Fond PMTiles, [créer un PMTiles pour votre région](pmtiles/README.md#créer-un-pmtiles-pour-votre-région), découpage GitHub, dépannage |
-| [elevation/README.md](elevation/README.md) | MNT Copernicus offline |
-| [pmtiles/tools/README.md](pmtiles/tools/README.md) | CLI go-pmtiles (`pmtiles.exe`) |
+| [SAR.md](SAR.md) | Guide opérationnel des missions SAR |
+| [sources.md](sources.md) | Provenance des données, calques, constats, DFCI |
+| [pmtiles/README.md](pmtiles/README.md) | Découpage de `loire.pmtiles`, création d’un fond pour une autre région, fond gris |
+| [elevation/README.md](elevation/README.md) | MNT Copernicus |
+| [pmtiles/tools/README.md](pmtiles/tools/README.md) | CLI go-pmtiles |
+
+---
+
+## Limites
+
+- Les calques, le DFCI, la recherche communale et l’altitude livrés ici couvrent la **Loire (42)**, pas la zone d’un fond extrait ailleurs.
+- **Une extraction à la fois.** Zone max **12°** de côté. Tuiles jusqu’au zoom **15**, surzoom d’affichage jusqu’à **18**.
+- L’aperçu France et l’extraction demandent Internet. La consultation d’une archive déjà sur le disque, non.
+- Redémarrer `serve.py` oublie les jobs en cours. Les `.pmtiles` déjà écrits restent.
+- Pas d’authentification sur le serveur.
+
+---
+
+## Licence et crédits
+
+GNU General Public License v3.0 — [LICENSE](LICENSE). Les bibliothèques embarquées gardent leur licence.
+
+- **Cartoff** — [F4EED/cartoff](https://github.com/F4EED/cartoff) : carte de crise, constats, SAR, calques 42.
+- **Chargement et extraction PMTiles** — adaptés de [F4EED/pmtiles](https://github.com/F4EED/pmtiles).
+- **Fond** — [Protomaps](https://protomaps.com), données [OpenStreetMap](https://www.openstreetmap.org/copyright) (ODbL).
+- **Villes de l’aperçu** — [Natural Earth](https://www.naturalearthdata.com/), domaine public.
+- **Départements de l’aperçu** — [france-geojson](https://github.com/gregoiredavid/france-geojson), Grégoire David, d’après l’IGN.
+- **Altitude** — [Copernicus DEM](https://spacedata.copernicus.eu/).
+- **Leaflet** — BSD 2-Clause. **pmtiles.js**, **protomaps-leaflet**, **go-pmtiles** — BSD 3-Clause.

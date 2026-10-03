@@ -666,6 +666,108 @@
       .leaflet-control-attribution { font-size: 10px !important; max-width: calc(100vw - 20px); }
       .leaflet-control-zoom a { width: 34px; height: 34px; line-height: 34px; }
     }
+    .basemap-section { margin-bottom: 8px; }
+    .basemap-section select,
+    .basemap-section input[type="text"],
+    .basemap-section input[type="number"] {
+      width: 100%;
+      padding: 6px 8px;
+      font-size: 13px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-family: Arial, sans-serif;
+      background: white;
+      font-weight: normal;
+    }
+    .basemap-hint {
+      margin: 6px 0 0;
+      font-size: 12px;
+      color: #555;
+      line-height: 1.35;
+      font-weight: normal;
+    }
+    .zone-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .zone-actions button {
+      padding: 6px 10px;
+      font-size: 13px;
+      border: 1px solid #3949ab;
+      border-radius: 4px;
+      background: #fff;
+      color: #3949ab;
+      cursor: pointer;
+      font-family: Arial, sans-serif;
+    }
+    .zone-actions button[aria-pressed="true"] {
+      background: #3949ab;
+      color: #fff;
+    }
+    .leaflet-container.is-selecting { cursor: crosshair; }
+    .extract-status { margin-top: 6px; font-size: 12px; line-height: 1.35; font-weight: normal; }
+    .extract-status.is-busy { color: #1d4ed8; }
+    .extract-status.is-ok { color: #166534; }
+    .extract-status.is-error { color: #b42318; }
+    .extract-status .log { display: block; margin-top: 4px; color: #666; font-size: 11px; word-break: break-word; }
+    .zone-marker { background: none !important; border: none !important; }
+    .zone-marker span {
+      display: flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #1d4ed8; color: #fff; font-size: 12px; font-weight: 700;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+    .city-label {
+      background: none !important;
+      border: none !important;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .city-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #1c2833; border: 1.5px solid #fff;
+      box-shadow: 0 0 0 1px rgba(28, 40, 51, 0.25);
+      flex-shrink: 0;
+    }
+    .city-label.is-capital .city-dot { width: 9px; height: 9px; background: #111827; }
+    .city-name {
+      font-size: 11px; font-weight: 650; color: #1c2833;
+      text-shadow: 0 0 3px #fff, 1px 0 1px #fff, -1px 0 1px #fff, 0 1px 1px #fff, 0 -1px 1px #fff;
+    }
+    .city-label.is-capital .city-name { font-size: 12px; }
+    .city-label.is-secondary .city-dot { width: 6px; height: 6px; background: #4d5d6c; }
+    .city-label.is-secondary .city-name { font-size: 10px; font-weight: 600; }
+    dialog#extract-dialog {
+      border: none; border-radius: 8px; padding: 0;
+      width: min(380px, calc(100vw - 32px));
+      box-shadow: 0 16px 40px rgba(0,0,0,0.28);
+      font-family: Arial, sans-serif;
+    }
+    dialog#extract-dialog::backdrop { background: rgba(28, 40, 51, 0.35); }
+    #extract-form { padding: 16px 18px 14px; }
+    #extract-form h2 { margin: 0 0 6px; font-size: 16px; }
+    #extract-form label { font-weight: bold; margin-bottom: 8px; }
+    #extract-form input[type="text"],
+    #extract-form input[type="number"] {
+      width: 100%; margin-top: 4px; padding: 6px 8px;
+      font-size: 14px; font-weight: normal; font-family: Arial, sans-serif;
+      border: 1px solid #ccc; border-radius: 4px;
+    }
+    .dialog-lead, .file-hint, .bbox-line {
+      margin: 0 0 10px; font-size: 12px; color: #555; line-height: 1.35; font-weight: normal;
+    }
+    .bbox-line { font-family: Consolas, monospace; word-break: break-all; }
+    .zoom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    #extract-form label.check {
+      flex-direction: row; display: flex; align-items: center; gap: 8px; font-weight: normal;
+    }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+    .dialog-actions button {
+      font-family: Arial, sans-serif; font-size: 14px;
+      border: 1px solid #3949ab; background: #fff; color: #3949ab;
+      border-radius: 4px; padding: 6px 12px; cursor: pointer;
+    }
+    .dialog-actions button.primary { background: #3949ab; color: #fff; }
   </style>
 </head>
 <body>
@@ -676,6 +778,24 @@
     <div class="doc-section">
       <button type="button" class="doc-btn" id="openDocBtn" title="Guides et références Cartoff">Documentation</button>
     </div>
+
+    <details class="basemap-section" open>
+      <summary>Fond de carte</summary>
+      <label class="basemap-field">Archive PMTiles
+        <select id="basemap-select">
+          <option value="">Chargement…</option>
+        </select>
+      </label>
+      <p class="basemap-hint">Sélectionner une zone affiche la France (réseau routier et villes principales) pour choisir l’emprise. Les calques Loire restent ceux du département 42.</p>
+      <div class="zone-tools">
+        <div class="zone-actions">
+          <button type="button" id="zone-btn" aria-pressed="false">Sélectionner une zone</button>
+          <button type="button" id="zone-cancel" hidden>Annuler</button>
+        </div>
+        <p id="zone-hint" class="basemap-hint"></p>
+        <div id="extract-status" class="extract-status"></div>
+      </div>
+    </details>
 
     <details class="search-section">
       <summary>Recherche</summary>
@@ -905,34 +1025,26 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
   <script src="js/sar-missions.js"></script>
   <script src="js/sar-operation.js"></script>
+  <script src="js/pmtiles.js"></script>
   <script src="js/protomaps-leaflet.js"></script>
 
   <script>
     const LOIRE_BOUNDS = L.latLngBounds([45.0, 3.5], [46.5, 5.0]);
     const PMTILES_MIN_ZOOM = 9;
-    const PMTILES_MAX_ZOOM = 15;
+    /* Dernier niveau de tuiles du build Protomaps. La carte peut surzoomer jusqu'à MAP_MAX_ZOOM. */
+    const PMTILES_DATA_MAX_ZOOM = 15;
+    const MAP_MAX_ZOOM = 18;
     const COORDS_DEBOUNCE_MS = 250;
     const map = L.map('map', {
       minZoom: PMTILES_MIN_ZOOM,
-      maxZoom: PMTILES_MAX_ZOOM,
+      maxZoom: MAP_MAX_ZOOM,
       zoomAnimation: false,
       fadeAnimation: false,
       markerZoomAnimation: false
     });
+    window.map = map;
     map.setView([45.7885, 4.1830], 9);
     map.setMaxBounds(LOIRE_BOUNDS.pad(0.05));
-    /*L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution:'&copy; OpenStreetMap contributors'
-    }).addTo(map);*/
-	
-    const pmtilesUrl = new URL("pmtiles/loire.pmtiles", window.location.href).href;
-    const pmtilesLayer = protomapsL.leafletLayer({
-      url: pmtilesUrl,
-      flavor: "light",
-      lang: "fr",
-      /* levelDiff 0 obligatoire : le défaut (1) demande z8 à l'affichage z9, absent du PMTiles (min zoom 9). */
-      levelDiff: 0
-    }).addTo(map);
 
     map.whenReady(() => {
       map.invalidateSize({ animate: false });
@@ -943,44 +1055,6 @@
     map.attributionControl.addAttribution(
       'MNT <a href="https://spacedata.copernicus.eu/" title="Copernicus DEM GLO-30">Copernicus DEM</a>'
     );
-
-    (async function checkPmtilesRangeSupport() {
-      const box = document.getElementById('coords');
-      function showPmtilesError(msg) {
-        console.error('PMTiles : ' + msg);
-        if (box) {
-          box.innerHTML =
-            '<span style="color:#c62828;font-weight:bold">' + msg + '</span>';
-        }
-      }
-      if (window.location.protocol === 'file:') {
-        showPmtilesError(
-          'Carte fond gris : ouvrez http://localhost:8000/ (pas le fichier index.html directement). Lancez start.bat ou python serve.py.'
-        );
-        return;
-      }
-      try {
-        const resp = await fetch(pmtilesUrl, { headers: { Range: 'bytes=0-16383' } });
-        const server = resp.headers.get('server') || '(inconnu)';
-        const acceptRanges = resp.headers.get('accept-ranges');
-        if (resp.status === 206 && acceptRanges === 'bytes') {
-          console.log('PMTiles OK — HTTP Range 206, Server:', server);
-          return;
-        }
-        const hint = server.includes('Cartoff')
-          ? 'le fichier tuiles est peut-être absent ou corrompu (python scripts/unpack_large_file.py)'
-          : 'mauvais serveur détecté (« ' + server + ' »). Fermez python -m http.server et lancez start.bat ou python serve.py';
-        showPmtilesError(
-          'Carte fond gris : HTTP Range requis (réponse ' + resp.status + ', Accept-Ranges=' +
-          acceptRanges + '). ' + hint
-        );
-      } catch (err) {
-        showPmtilesError(
-          'Carte fond gris : impossible de charger pmtiles/loire.pmtiles — lancez start.bat ou python serve.py puis ouvrez http://localhost:8000/'
-        );
-        console.error(err);
-      }
-    })();
 
     map.createPane('situationPane');
     map.getPane('situationPane').style.zIndex = 610;
@@ -1113,17 +1187,29 @@
       };
     }
 
+    function activeBasemapBounds() {
+      if (window.cartoffZonePicking && window.cartoffFranceBounds) return window.cartoffFranceBounds;
+      return (window.cartoffBasemap && window.cartoffBasemap.bounds) || LOIRE_BOUNDS;
+    }
+
+    function activeMinZoom() {
+      if (window.cartoffZonePicking) return 5;
+      const zoom = window.cartoffBasemap && window.cartoffBasemap.minZoom;
+      return zoom == null ? PMTILES_MIN_ZOOM : zoom;
+    }
+
     function fitMapToArea() {
       map.invalidateSize({ animate: false });
       const size = map.getSize();
       if (!size || size.x < 50 || size.y < 50) return;
-      map.fitBounds(LOIRE_BOUNDS, {
+      const bounds = activeBasemapBounds();
+      map.fitBounds(bounds, {
         ...getMapFitPadding(),
-        maxZoom: PMTILES_MAX_ZOOM,
+        maxZoom: PMTILES_DATA_MAX_ZOOM,
         animate: false
       });
-      if (map.getZoom() < PMTILES_MIN_ZOOM) {
-        map.setView([45.7885, 4.1830], PMTILES_MIN_ZOOM);
+      if (map.getZoom() < activeMinZoom()) {
+        map.setView(bounds.getCenter(), activeMinZoom());
       }
     }
 
@@ -2664,6 +2750,10 @@
     document.getElementById('situationLineDrawCancel').addEventListener('click', cancelDrawMode);
 
     map.getContainer().addEventListener('contextmenu', (e) => {
+      if (window.zoneSelectActive) {
+        e.preventDefault();
+        return;
+      }
       if (drawState) return;
       if (typeof CartoffSarOperation !== 'undefined' && CartoffSarOperation.isDrawOrPanelActive()) return;
       if (typeof CartoffSar !== 'undefined' && CartoffSar.isDrawOrPanelActive()) return;
@@ -3016,7 +3106,7 @@
       } else {
         map.fitBounds(bounds, {
           ...getMapFitPadding(),
-          maxZoom: PMTILES_MAX_ZOOM,
+          maxZoom: PMTILES_DATA_MAX_ZOOM,
           animate: true
         });
       }
@@ -3561,5 +3651,40 @@
       } catch { /* hors ligne ou fichier absent */ }
     })();
   </script>
+
+  <dialog id="extract-dialog">
+    <form id="extract-form" method="dialog">
+      <h2>Créer un fichier PMTiles</h2>
+      <p class="dialog-lead">
+        L’archive vectorielle (fond Protomaps OSM) sera extraite pour le rectangle
+        englobant vos 4 points. Une connexion Internet est nécessaire.
+      </p>
+      <label>Nom du fichier
+        <input id="extract-name" name="name" type="text" required maxlength="64" placeholder="ex. secteur-est" autocomplete="off">
+      </label>
+      <p class="file-hint">Enregistré sous <code>nom.pmtiles</code> dans le dossier pmtiles/.</p>
+      <p id="extract-bbox" class="bbox-line"></p>
+      <div class="zoom-row">
+        <label>Zoom min
+          <input name="minzoom" type="number" min="0" max="15" value="9">
+        </label>
+        <label>Zoom max (tuiles)
+          <input name="maxzoom" type="number" min="0" max="15" value="15">
+        </label>
+      </div>
+      <p class="file-hint">Le fond Protomaps s’arrête au zoom 15. La carte peut ensuite surzoomer jusqu’à 18.</p>
+      <label class="check">
+        <input name="overwrite" type="checkbox">
+        Remplacer le fichier s’il existe déjà
+      </label>
+      <div class="dialog-actions">
+        <button type="button" id="extract-dialog-cancel">Annuler</button>
+        <button type="submit" class="primary">Extraire</button>
+      </div>
+    </form>
+  </dialog>
+  <script src="js/basemap.js"></script>
+  <script src="js/zone-overview.js"></script>
+  <script src="js/zone-extract.js"></script>
 </body>
 </html>

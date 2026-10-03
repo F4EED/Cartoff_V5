@@ -65,7 +65,7 @@ python scripts/unpack_large_file.py -o chemin/vers/sortie.pmtiles
 
 ## Lancer la carte
 
-`loire.pmtiles` doit être présent dans `pmtiles/` pour que le fond de carte s’affiche dans `index.html` (zoom **9 à 15**).
+Placez une ou plusieurs archives `*.pmtiles` dans `pmtiles/`. Au démarrage, Cartoff charge **`loire.pmtiles`** s’il est présent, sinon l’archive la plus récente. Le menu **Fond de carte** permet d’en changer : l’emprise et les zooms sont lus dans l’en-tête du fichier.
 
 Servez le projet via un serveur web (pas en `file://`) :
 
@@ -79,32 +79,21 @@ python serve.py -p 8000
 
 Depuis la racine du dépôt — voir aussi [README.md](../README.md).
 
-Le serveur `serve.py` gère les requêtes **HTTP Range** (réponse 206) nécessaires au format PMTiles (port 8000 par défaut, option `-p`). Au démarrage, il avertit si `loire.pmtiles` est absent.
+Le serveur `serve.py` gère les requêtes **HTTP Range** (réponse 206) et l’API `/api/files`, `/api/extract`, `/api/jobs/<id>`. Au démarrage, il avertit s’il n’y a aucune archive.
 
 ⚠️ **Ne pas utiliser** `python -m http.server` : pas de support HTTP Range → fond gris.
 
-### Configuration Leaflet (`levelDiff`)
+### Chargement (`js/basemap.js`)
 
-Le fichier `loire.pmtiles` ne contient **aucune tuile en dessous du zoom 9** (`min_zoom: 9` dans `loire.json`).
+`protomapsL.leafletLayer` est créé avec **`levelDiff: 0`** et **`maxDataZoom`** pris dans l’en-tête. Sans `levelDiff: 0`, un extrait dont le zoom minimal est 9 demande des tuiles z8 et le fond reste gris.
 
-Dans `index.html`, le fond est créé ainsi :
+La carte autorise le surzoom jusqu’au niveau **18** (`MAP_MAX_ZOOM`). Le zoom minimal de la vue suit `minZoom` de l’archive chargée.
 
-```javascript
-protomapsL.leafletLayer({
-  url: pmtilesUrl,
-  flavor: "light",
-  lang: "fr",
-  levelDiff: 0   // obligatoire — le défaut (1) demande z8 à l'affichage z9
-});
-```
+Avant d’afficher un fond, le client sonde `Range: bytes=0-16383` et exige une réponse **206** avec `Accept-Ranges: bytes`. Sinon un message s’affiche dans la boîte de coordonnées.
 
-Sans `levelDiff: 0`, protomaps-leaflet demande des tuiles au niveau **z8** lorsque la carte est au zoom **9** ; ces tuiles n’existent pas dans l’archive → **fond gris** même avec un serveur correct.
+### Extraire une zone depuis la carte
 
-La carte impose aussi `minZoom: 9` et `maxZoom: 15` (`PMTILES_MIN_ZOOM` / `PMTILES_MAX_ZOOM`).
-
-### Vérification automatique
-
-Au chargement, `index.html` teste une requête `Range: bytes=0-16383` sur `pmtiles/loire.pmtiles`. Si la réponse n’est pas **206** avec `Accept-Ranges: bytes`, un message d’erreur s’affiche dans la boîte de coordonnées.
+Dans le panneau **Fond de carte** : **Sélectionner une zone**. La carte quitte l’emprise Loire et affiche la France (réseau routier Protomaps, villes principales). Quatre clics, nom et zooms, puis **Extraire**. Annuler revient au fond précédent. `extract.py` appelle `pmtiles/tools/pmtiles.exe` sur le dernier build Protomaps (réseau requis, une extraction à la fois). Le fichier est ensuite proposé dans le menu et affiché.
 
 ### Autre gros fichier : altitude
 
@@ -126,7 +115,9 @@ Documentez ces valeurs dans un fichier JSON (ex. `pmtiles/ma-region.json`) : `bo
 
 ### 2. Extraction
 
-**Script** (détecte le dernier build sur `build.protomaps.com`) — adapter d’abord `WEST,SOUTH,EAST,NORTH` dans `scripts/build_loire_pmtiles.py` (L14), ou passer par le CLI :
+**Depuis la carte** (recommandé) : panneau **Fond de carte** → **Sélectionner une zone**. Quatre clics délimitent le rectangle ; le serveur écrit `pmtiles/<nom>.pmtiles`.
+
+**Script** (emprise Loire codée en dur) — ou CLI :
 
 ```bash
 python scripts/build_loire_pmtiles.py --min-zoom 9 --max-zoom 15 -o pmtiles/ma-region.pmtiles --force
@@ -153,31 +144,13 @@ Génère `ma-region.pmtiles.part001`, … et `ma-region.pmtiles.manifest.json`. 
 python scripts/unpack_large_file.py pmtiles/ma-region.pmtiles.manifest.json
 ```
 
-### 4. Checklist — remplacer `loire.pmtiles`
+### 4. Utiliser l’archive
 
-| Fichier | À modifier |
-|---------|------------|
-| **`index.html`** (~L810) | URL `pmtiles/loire.pmtiles` → votre fichier |
-| **`index.html`** (~L793–795) | `LOIRE_BOUNDS`, `PMTILES_MIN_ZOOM`, `PMTILES_MAX_ZOOM` (alignés sur bbox et zooms de l’archive) |
-| **`index.html`** (~L816) | `levelDiff: 0` si `minzoom ≥ 9` (voir ci-dessous) |
-| **`serve.py`** (L118) | Chemin du PMTiles vérifié au démarrage |
-| **`start.bat`** (L13–17) | Test d’existence + appel `unpack_large_file.py` avec le bon manifeste |
-| **`.gitignore`** | Ignorer le `.pmtiles` complet (ex. `pmtiles/ma-region.pmtiles`) |
-| **Manifeste** | Régénéré par `pack_large_file.py` (`source`, noms `.part*`) |
+Déposez le `.pmtiles` dans `pmtiles/` (ou laissez l’extraction carte l’y écrire) puis rechargez la page. Le menu **Fond de carte** le liste via `GET /api/files`. L’emprise et le zoom minimal viennent de l’en-tête : il n’y a plus d’URL ni de bbox à coder dans `index.html`.
 
-Scripts optionnels (défauts ou arguments) : `pack_large_file.py`, `unpack_large_file.py`, `build_loire_pmtiles.py` (`-o`).
+`start.bat` reconstitue toujours `loire.pmtiles` s’il manque. Les calques GeoJSON, le DFCI et l’altitude restent ceux de la Loire : pour une autre région, il faut encore préparer ces données à part.
 
-Pour une **autre emprise** (pas seulement le nom) : adapter aussi `scripts/build_elevation_loire.py`, les calques `geojson/`, et le centre initial dans `index.html` (~L1003).
-
-### 5. `levelDiff: 0` quand `minzoom ≥ 9`
-
-Un extrait régional sans tuiles sous le zoom **N** doit utiliser **`levelDiff: 0`** dans `protomapsL.leafletLayer` : au zoom carte **Z**, les tuiles demandées sont au zoom **Z**.
-
-Le défaut protomaps-leaflet (`levelDiff: 1`) demande des tuiles **z8** à l’affichage **z9** — absentes d’un extrait `minzoom=9` → **fond gris**.
-
-Règle : `PMTILES_MIN_ZOOM` = `minzoom` de l’archive + **`levelDiff: 0`**.
-
-Servez via `start.bat` ou `python serve.py` → **http://localhost:8000/** (HTTP Range requis).
+`.gitignore` ignore déjà `pmtiles/*.pmtiles`. Versionnez les morceaux et le manifeste, pas l’archive complète.
 
 ---
 
