@@ -22,6 +22,8 @@ import uuid
 from datetime import date, timedelta
 from pathlib import Path
 
+import zone_layers
+
 ROOT = Path(__file__).resolve().parent
 OUTPUT_DIR = ROOT / "pmtiles"
 BUILD_BASE = "https://build.protomaps.com/{date}.pmtiles"
@@ -191,6 +193,23 @@ def _run_extract(job: dict) -> None:
                 output.unlink(missing_ok=True)
                 raise ExtractError(verify.stderr or "Vérification PMTiles échouée.")
             job["size"] = output.stat().st_size
+            bbox = job["bbox"]
+            try:
+                manifest = zone_layers.build_zone_layers(
+                    job["name"],
+                    bbox["west"],
+                    bbox["south"],
+                    bbox["east"],
+                    bbox["north"],
+                    log=lambda line: _append_log(job, line),
+                )
+                job["layers"] = {
+                    "ok": not manifest.get("errors"),
+                    "errors": manifest.get("errors") or [],
+                }
+            except Exception as exc:  # noqa: BLE001
+                job["layers"] = {"ok": False, "errors": [str(exc)]}
+                _append_log(job, f"Calques OSM/DFCI : {exc}\n")
             job["status"] = "done"
             job["download"] = f"/api/download/{job['name']}.pmtiles"
             _append_log(job, f"Terminé : {output.name} ({job['size']} octets)\n")
@@ -221,6 +240,7 @@ def public_job(job: dict) -> dict:
         "bbox": job.get("bbox"),
         "minzoom": job.get("minzoom"),
         "maxzoom": job.get("maxzoom"),
+        "layers": job.get("layers"),
     }
 
 

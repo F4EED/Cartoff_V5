@@ -26,6 +26,9 @@
   let panelTimestampEl = null;
   let panelBearingFieldsEl = null;
   let panelAzimuthEl = null;
+  let panelAzimuthFrameEl = null;
+  let panelDeclinationEl = null;
+  let panelAzimuthHintEl = null;
   let panelRangeEl = null;
   let panelBearingTargetEl = null;
   let panelTeamFieldsEl = null;
@@ -976,7 +979,16 @@
     if (props.notes) html += '<b>Notes :</b> ' + escapeHtml(props.notes) + '<br>';
     if (props.commune) html += '<b>Commune :</b> ' + escapeHtml(props.commune) + '<br>';
     if (props.dfci) html += '<b>DFCI :</b> ' + escapeHtml(props.dfci) + '<br>';
-    if (props[T.PROP_AZIMUTH] != null) {
+    if (props[T.PROP_AZIMUTH] != null && !isReciprocalProp(props)) {
+      html += '<b>Azimut vrai :</b> ' + escapeHtml(String(props[T.PROP_AZIMUTH])) + '°<br>';
+      if (props[T.PROP_AZIMUTH_FRAME] === 'magnetic' && props[T.PROP_AZIMUTH_INPUT] != null) {
+        html += '<b>Saisie boussole :</b> ' + escapeHtml(String(props[T.PROP_AZIMUTH_INPUT])) + '°';
+        if (props[T.PROP_DECLINATION] != null) {
+          html += ' · déclinaison ' + escapeHtml(String(props[T.PROP_DECLINATION])) + '° Est';
+        }
+        html += '<br>';
+      }
+    } else if (props[T.PROP_AZIMUTH] != null) {
       html += '<b>Azimut :</b> ' + escapeHtml(String(props[T.PROP_AZIMUTH])) + '°<br>';
     }
     if (props[T.PROP_RANGE_KM] != null) {
@@ -2266,6 +2278,10 @@
         stationLabel: station && station.properties ? (station.properties.label || 'Station DF') : '—',
         teamName: p[T.PROP_TEAM_NAME] || '—',
         azimuth: p[T.PROP_AZIMUTH] != null ? T.normalizeAzimuth(p[T.PROP_AZIMUTH]).toFixed(1) + '°' : '—',
+        azimuthInput: p[T.PROP_AZIMUTH_FRAME] === 'magnetic' && p[T.PROP_AZIMUTH_INPUT] != null
+          ? T.normalizeAzimuth(p[T.PROP_AZIMUTH_INPUT]).toFixed(1) + '° magn.'
+          : (p[T.PROP_AZIMUTH] != null ? T.normalizeAzimuth(p[T.PROP_AZIMUTH]).toFixed(1) + '° vrai' : '—'),
+        declination: p[T.PROP_DECLINATION] != null ? String(p[T.PROP_DECLINATION]) + '° E' : '—',
         rangeKm: p[T.PROP_RANGE_KM] != null ? String(p[T.PROP_RANGE_KM]) + ' km' : '—',
         datetime: p.created_at ? formatTimestamp(p.created_at) : '—',
         pointCoords: rpCtx ? formatLatLonShort(rpCtx.lat, rpCtx.lon) : '—',
@@ -2313,10 +2329,10 @@
     doc.rect(margin, y - 4, doc.internal.pageSize.getWidth() - margin * 2, 7, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(11);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.text(title, margin + 2, y + 1);
     doc.setTextColor.apply(doc, PDF_BRAND.text);
-    doc.setFont(undefined, 'normal');
+    doc.setFont('helvetica', 'normal');
     return y + 10;
   }
 
@@ -2350,7 +2366,7 @@
     if (!mission) return;
     const JsPDF = getJsPdfConstructor();
     if (!JsPDF) {
-      alert('Bibliothèque PDF non disponible. Vérifiez la connexion ou rechargez la page.');
+      alert('Bibliothèque PDF absente. Les fichiers js/jspdf.umd.min.js et js/jspdf.plugin.autotable.min.js doivent être à côté de la page.');
       return;
     }
 
@@ -2372,21 +2388,21 @@
     doc.rect(0, 0, pageW, 22, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(16);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.text('Cartoff — Mission SAR', margin, 10);
     doc.setFontSize(9);
-    doc.setFont(undefined, 'normal');
+    doc.setFont('helvetica', 'normal');
     doc.text('Rapport d\'export · ' + exportDate, margin, 16);
     doc.setTextColor.apply(doc, PDF_BRAND.text);
     y = 28;
 
     const mt = T.getMissionType(mission.type);
     doc.setFontSize(13);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.text(mission.name || 'Mission SAR', margin, y);
     y += 7;
     doc.setFontSize(10);
-    doc.setFont(undefined, 'normal');
+    doc.setFont('helvetica', 'normal');
     const infoLines = [
       'Type : ' + (mt ? mt.label : mission.type),
       'Statut : ' + missionStatusLabel(mission.status),
@@ -2448,9 +2464,9 @@
         y = pdfAutoTable(doc, {
           startY: y,
           margin: { left: margin, right: margin },
-          head: [['Station', 'Équipe', 'Azimut', 'Portée', 'Date/heure', 'Point relevé', 'Alt. pt']],
+          head: [['Station', 'Équipe', 'Saisie', 'Azimut vrai', 'Décl.', 'Portée', 'Date/heure', 'Point relevé', 'Alt. pt']],
           body: bearings.map((b) => [
-            b.stationLabel, b.teamName, b.azimuth, b.rangeKm, b.datetime, b.pointCoords, b.pointAlt
+            b.stationLabel, b.teamName, b.azimuthInput, b.azimuth, b.declination, b.rangeKm, b.datetime, b.pointCoords, b.pointAlt
           ]),
           styles: { fontSize: 8, cellPadding: 1.5 },
           headStyles: { fillColor: PDF_BRAND.accent, textColor: 255, fontStyle: 'bold' },
@@ -2482,7 +2498,7 @@
           const unc = fp[T.PROP_UNCERTAINTY_KM] != null ? '± ' + fp[T.PROP_UNCERTAINTY_KM] + ' km' : '—';
           const stations = formatFixStationPair(mission, fp, receptions).replace(/<[^>]+>/g, '');
           return [
-            'Fix ' + fixIndex + (isBest ? ' ★' : ''),
+            'Fix ' + fixIndex + (isBest ? ' *' : ''),
             isBest ? 'Oui' : 'Non',
             latLon,
             unc,
@@ -2504,10 +2520,10 @@
         if (bestFix && bestFix.geometry && bestFix.geometry.coordinates) {
           y = pdfEnsureSpace(doc, y, 24, margin, pageH);
           doc.setFontSize(10);
-          doc.setFont(undefined, 'bold');
+          doc.setFont('helvetica', 'bold');
           doc.text('Meilleur candidat', margin, y);
           y += 5;
-          doc.setFont(undefined, 'normal');
+          doc.setFont('helvetica', 'normal');
           doc.setFontSize(9);
           const bc = bestFix.geometry.coordinates;
           formatCoordsLines(bc[1], bc[0]).forEach((line) => {
@@ -2527,9 +2543,9 @@
       doc.setFontSize(8);
       doc.setTextColor.apply(doc, PDF_BRAND.muted);
       const warn = [
-        'Estimation indicative basée sur l\'intersection géodésique de relèvements DF.',
+        'Estimation indicative. L\'intersection utilise l\'azimut vrai (boussole + déclinaison Est).',
         'Ne remplace pas une analyse opérationnelle ni des données officielles.',
-        'Outil 100 % offline — vérifier sur le terrain.'
+        'Outil hors ligne — vérifier la déclinaison et le terrain.'
       ];
       warn.forEach((line) => {
         doc.text(line, margin, y);
@@ -2588,14 +2604,61 @@
     };
   }
 
+  function readBearingFrame() {
+    const frame = panelAzimuthFrameEl ? panelAzimuthFrameEl.value : 'magnetic';
+    return frame === 'true' ? 'true' : 'magnetic';
+  }
+
+  function readDeclination() {
+    const raw = panelDeclinationEl ? panelDeclinationEl.value : '2.5';
+    const value = Number(raw);
+    return isFinite(value) ? Math.round(value * 10) / 10 : 0;
+  }
+
+  function stationLatLonForPanel() {
+    if (!panelState) return null;
+    const mission = getMission(panelState.missionId) || getActiveMission();
+    const station = mission ? findStationById(mission, panelState.stationId) : null;
+    const coords = station && station.geometry && station.geometry.coordinates;
+    if (!coords) return null;
+    return { lat: coords[1], lon: coords[0] };
+  }
+
+  function refreshAzimuthHint() {
+    if (!panelAzimuthHintEl) return;
+    const azRaw = panelAzimuthEl ? panelAzimuthEl.value : '';
+    if (azRaw === '' || !isFinite(Number(azRaw))) {
+      panelAzimuthHintEl.textContent = '';
+      return;
+    }
+    const frame = readBearingFrame();
+    const decl = readDeclination();
+    const input = T.normalizeAzimuth(azRaw);
+    const truth = T.trueAzimuthFromInput(input, frame, decl);
+    const shiftKm = Math.round(Math.abs(Math.sin(decl * Math.PI / 180) * 30) * 10) / 10;
+    if (frame === 'magnetic') {
+      panelAzimuthHintEl.textContent =
+        'Azimut vrai utilisé : ' + truth.toFixed(1) + '° (boussole ' + input.toFixed(1) +
+        '° + déclinaison ' + decl.toFixed(1) + '° Est). Sans correction, ~' + shiftKm + ' km d\'écart à 30 km.';
+    } else {
+      panelAzimuthHintEl.textContent = 'Azimut vrai : ' + truth.toFixed(1) + '°. Aucune correction boussole.';
+    }
+  }
+
   function peekBearingInputs() {
     const azRaw = panelAzimuthEl ? panelAzimuthEl.value : '0';
     const rangeRaw = panelRangeEl ? panelRangeEl.value : String(T.DEFAULT_RANGE_KM);
     if (azRaw === '' || !isFinite(Number(azRaw))) return null;
     const range = Number(rangeRaw);
     if (!isFinite(range) || range <= 0) return null;
+    const frame = readBearingFrame();
+    const declination = readDeclination();
+    const azimuthInput = T.normalizeAzimuth(azRaw);
     return {
-      azimuth: T.normalizeAzimuth(azRaw),
+      azimuth: T.trueAzimuthFromInput(azimuthInput, frame, declination),
+      azimuthInput: azimuthInput,
+      frame: frame,
+      declination: declination,
       rangeKm: Math.max(0.1, Math.round(range * 10) / 10)
     };
   }
@@ -2712,8 +2775,20 @@
     if (panelTimestampEl) {
       panelTimestampEl.value = toDatetimeLocalValue(opts.created_at || '');
     }
+    if (panelAzimuthFrameEl) {
+      panelAzimuthFrameEl.value = opts.azimuthFrame === 'magnetic' ? 'magnetic' : 'true';
+    }
+    if (panelDeclinationEl) {
+      let decl = opts.declination;
+      if (decl == null) {
+        const pos = stationLatLonForPanel();
+        decl = pos ? T.franceDeclinationDeg(pos.lat, pos.lon) : 2.5;
+      }
+      panelDeclinationEl.value = String(decl);
+    }
     if (panelAzimuthEl) {
-      panelAzimuthEl.value = opts.azimuth != null ? String(opts.azimuth) : '0';
+      const shown = opts.azimuthInput != null ? opts.azimuthInput : opts.azimuth;
+      panelAzimuthEl.value = shown != null ? String(shown) : '0';
     }
     if (panelRangeEl) {
       panelRangeEl.value = opts.rangeKm != null ? String(opts.rangeKm) : String(T.DEFAULT_RANGE_KM);
@@ -2740,6 +2815,7 @@
         bearingTargetInfo = relevePointToTargetCtx(findRelevePointInGroup(mission, panelState.bearingGroupId));
       }
       renderBearingTargetInfo(bearingTargetInfo);
+      refreshAzimuthHint();
       updateBearingPreview();
     } else {
       renderBearingTargetInfo(null);
@@ -2808,6 +2884,9 @@
         label: rp.label || '',
         notes: rp.notes || '',
         azimuth: rp[T.PROP_AZIMUTH],
+        azimuthInput: rp[T.PROP_AZIMUTH_INPUT],
+        azimuthFrame: rp[T.PROP_AZIMUTH_FRAME] || 'true',
+        declination: rp[T.PROP_DECLINATION],
         rangeKm: rp[T.PROP_RANGE_KM],
         teamId: rp[T.PROP_TEAM_ID] || '',
         clientX,
@@ -2839,7 +2918,7 @@
   }
 
   /** Paire signal direct (plein) + arrière (pointillé) — affichage depuis le point de relevé ; intersection SAR-3 via station + sar:azimuth. */
-  function buildBearingFeaturePair(mission, stationFeature, azimuth, rangeKm, label, notes, groupId, createdAt, teamId, targetCtx) {
+  function buildBearingFeaturePair(mission, stationFeature, azimuth, rangeKm, label, notes, groupId, createdAt, teamId, targetCtx, bearingMeta) {
     const stationProps = stationFeature.properties || {};
     const stationId = stationProps.id;
     const displayOrigin = resolveBearingDisplayOrigin(stationFeature, targetCtx);
@@ -2865,6 +2944,9 @@
         [T.PROP_STATION_ID]: stationId,
         [T.PROP_BEARING_GROUP_ID]: gid,
         [T.PROP_AZIMUTH]: az,
+        [T.PROP_AZIMUTH_INPUT]: bearingMeta && bearingMeta.azimuthInput != null ? bearingMeta.azimuthInput : az,
+        [T.PROP_AZIMUTH_FRAME]: bearingMeta && bearingMeta.frame ? bearingMeta.frame : 'true',
+        [T.PROP_DECLINATION]: bearingMeta && bearingMeta.declination != null ? bearingMeta.declination : 0,
         [T.PROP_RANGE_KM]: range,
         [T.PROP_BEARING_RECIPROCAL]: false,
         ...teamProps
@@ -2910,7 +2992,7 @@
     };
   }
 
-  function persistBearingPair(mission, stationFeature, azimuth, rangeKm, label, notes, groupId, createdAt, teamId, targetCtx) {
+  function persistBearingPair(mission, stationFeature, azimuth, rangeKm, label, notes, groupId, createdAt, teamId, targetCtx, bearingMeta) {
     ensureMissionFeatures(mission);
     let existingRelevePoint = null;
     if (groupId) {
@@ -2920,7 +3002,7 @@
       }) || null;
     }
     const pair = buildBearingFeaturePair(
-      mission, stationFeature, azimuth, rangeKm, label, notes, groupId, createdAt, teamId, targetCtx
+      mission, stationFeature, azimuth, rangeKm, label, notes, groupId, createdAt, teamId, targetCtx, bearingMeta
     );
     if (!pair) return;
     if (groupId) {
@@ -3190,6 +3272,9 @@
         label: rp.label || '',
         notes: rp.notes || '',
         azimuth: rp[T.PROP_AZIMUTH],
+        azimuthInput: rp[T.PROP_AZIMUTH_INPUT],
+        azimuthFrame: rp[T.PROP_AZIMUTH_FRAME] || 'true',
+        declination: rp[T.PROP_DECLINATION],
         rangeKm: rp[T.PROP_RANGE_KM],
         teamId: rp[T.PROP_TEAM_ID] || '',
         clientX,
@@ -3220,6 +3305,7 @@
       label: 'Relèvement DF',
       notes: '',
       azimuth: defaults ? defaults.azimuth : 0,
+      azimuthFrame: defaults ? 'true' : 'magnetic',
       rangeKm: defaults ? defaults.rangeKm : T.DEFAULT_RANGE_KM,
       teamId: stationProps[T.PROP_TEAM_ID] || '',
       bearingTarget: targetCtx,
@@ -3231,7 +3317,6 @@
   function parseBearingInputs() {
     const azRaw = panelAzimuthEl ? panelAzimuthEl.value : '0';
     const rangeRaw = panelRangeEl ? panelRangeEl.value : String(T.DEFAULT_RANGE_KM);
-    const az = T.normalizeAzimuth(azRaw);
     if (azRaw === '' || !isFinite(Number(azRaw))) {
       alert('Indiquez un azimut valide (0–360°).');
       return null;
@@ -3241,7 +3326,16 @@
       alert('Indiquez une portée valide (km).');
       return null;
     }
-    return { azimuth: az, rangeKm: Math.round(range * 10) / 10 };
+    const frame = readBearingFrame();
+    const declination = readDeclination();
+    const azimuthInput = T.normalizeAzimuth(azRaw);
+    return {
+      azimuth: T.trueAzimuthFromInput(azimuthInput, frame, declination),
+      azimuthInput: azimuthInput,
+      frame: frame,
+      declination: declination,
+      rangeKm: Math.round(range * 10) / 10
+    };
   }
 
   function saveBearingPanel() {
@@ -3275,7 +3369,7 @@
     }
     persistBearingPair(
       mission, station, bearing.azimuth, bearing.rangeKm, label, notes, groupId, createdAt, teamId,
-      targetCtx
+      targetCtx, bearing
     );
     closePanel();
   }
@@ -3895,7 +3989,9 @@
     if (panelSaveBtn) panelSaveBtn.addEventListener('click', onSave);
     if (panelCancelBtn) panelCancelBtn.addEventListener('click', onCancel);
     if (panelDeleteBtn) panelDeleteBtn.addEventListener('click', onDelete);
-    if (panelAzimuthEl) panelAzimuthEl.addEventListener('input', updateBearingPreview);
+    if (panelAzimuthEl) panelAzimuthEl.addEventListener('input', () => { refreshAzimuthHint(); updateBearingPreview(); });
+    if (panelAzimuthFrameEl) panelAzimuthFrameEl.addEventListener('change', () => { refreshAzimuthHint(); updateBearingPreview(); });
+    if (panelDeclinationEl) panelDeclinationEl.addEventListener('input', () => { refreshAzimuthHint(); updateBearingPreview(); });
     if (panelRangeEl) panelRangeEl.addEventListener('input', updateBearingPreview);
     if (drawFinishBtn) {
       drawFinishBtn.addEventListener('click', () => {
@@ -3929,6 +4025,9 @@
     panelTimestampEl = options.panelTimestampEl;
     panelBearingFieldsEl = options.panelBearingFieldsEl;
     panelAzimuthEl = options.panelAzimuthEl;
+    panelAzimuthFrameEl = options.panelAzimuthFrameEl || null;
+    panelDeclinationEl = options.panelDeclinationEl || null;
+    panelAzimuthHintEl = options.panelAzimuthHintEl || null;
     panelRangeEl = options.panelRangeEl;
     panelBearingTargetEl = options.panelBearingTargetEl || null;
     panelTeamFieldsEl = options.panelTeamFieldsEl;

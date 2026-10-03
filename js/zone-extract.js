@@ -275,9 +275,13 @@
         clearInterval(pollTimer);
         if (job.status === "done") {
           const mb = job.size ? (job.size / 1048576).toFixed(1) : "?";
+          const layersNote = job.layers && job.layers.ok
+            ? " Calques OSM et DFCI de la zone prêts dans le menu."
+            : " Fond prêt. Une partie des calques OSM ou DFCI n’a pas pu être chargée.";
           setStatus(
-            "Fond chargé : <strong>" + escapeHtml(job.name) + ".pmtiles</strong> (" + mb + " Mo). " +
-              '<a href="' + escapeHtml(job.download) + '" download="' + escapeHtml(job.name) + '.pmtiles">Télécharger</a>',
+            "Fond chargé : <strong>" + escapeHtml(job.name) + ".pmtiles</strong> (" + mb + " Mo)." +
+              layersNote +
+              ' <a href="' + escapeHtml(job.download) + '" download="' + escapeHtml(job.name) + '.pmtiles">Télécharger</a>',
             "ok"
           );
           clearDrawing();

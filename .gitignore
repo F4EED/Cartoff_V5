@@ -2,6 +2,7 @@ pmtiles/node_modules/
 pmtiles/loire.pmtiles
 pmtiles/*.pmtiles
 pmtiles/.*.geojson
+geojson/zones/
 elevation/loire_elev.bin
 __pycache__/
 scripts/__pycache__/

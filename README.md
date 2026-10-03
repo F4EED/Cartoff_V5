@@ -13,7 +13,7 @@ Ce dépôt réunit deux projets :
 | [F4EED/cartoff](https://github.com/F4EED/cartoff) | La carte opérationnelle : calques du département de la Loire (42), coordonnées, DFCI, altitude, constats, missions SAR, imports locaux. |
 | [F4EED/pmtiles](https://github.com/F4EED/pmtiles) | Le chargement des archives PMTiles et leur usage : liste des fonds, lecture de l’en-tête, HTTP Range, extraction d’une zone en quatre clics, aperçu France pour choisir l’emprise. |
 
-Le fond opérationnel par défaut reste **la Loire** (`loire.pmtiles`). Les calques GeoJSON, le carroyage DFCI et le MNT Copernicus restent ceux du **département 42**, même si un autre fond est affiché. Choisir une nouvelle zone ouvre temporairement un aperçu de la France (réseau routier et villes principales), le temps de poser les quatre points.
+Le fond opérationnel par défaut reste **la Loire** (`loire.pmtiles`), avec les calques OSM, le DFCI et l’altitude du département 42. Choisir une nouvelle zone ouvre un aperçu de la France. Une fois l’archive extraite, le menu de droite charge les calques OSM et le DFCI de cette emprise. L’altitude reste celle du 42.
 
 > Pensé pour les environnements dégradés.  
 > Après préparation, la carte, les constats et les missions fonctionnent sans réseau.  
@@ -100,7 +100,7 @@ Pour chaque archive, le client lit l’en-tête PMTiles (emprise, `minZoom`, `ma
 1. **Sélectionner une zone.** La carte quitte l’emprise du fond local. Elle affiche la France : réseau routier Protomaps (le chevelu) et les villes principales (préfectures dès l’aperçu, sous-préfectures en zoomant). Les contours de départements restent en surimpression.
 2. Quatre clics délimitent le secteur. L’ordre est sans importance : les sommets sont réordonnés.
 3. Donner un nom et une plage de zooms, puis **Extraire**.
-4. L’avancement s’affiche dans le panneau. À la fin, le nouveau fichier est proposé dans le menu et affiché.
+4. L’avancement s’affiche dans le panneau. À la fin, le nouveau fichier est proposé dans le menu et affiché. Les calques OSM (communes, urgence, santé, services, toponymie) et le carroyage DFCI de la même emprise sont écrits dans `geojson/zones/<nom>/`. Le menu de droite les prend à la place des fichiers du département 42. Revenir sur `loire` restaure les calques Loire. L’altitude Copernicus reste celle du 42.
 5. **Annuler** (ou Échap dans la fenêtre) revient au fond et à la vue précédents.
 
 Hors ligne, ou si le relais vers Protomaps échoue, l’aperçu retombe sur un atlas : départements en aplat et les mêmes villes. On peut encore dessiner la zone ; l’extraction, elle, a besoin du réseau.
@@ -109,7 +109,7 @@ Le chevelu n’est pas téléchargé en entier. Le navigateur demande de petites
 
 Compter quelques minutes et de l’ordre de 20 à 200 Mo pour un département aux zooms 9–15. Une seule extraction à la fois. La zone est bornée à **12° de côté**. Les zooms de tuiles vont de 0 à **15**.
 
-Les calques Loire (communes, DFCI, altitude, recherche) ne suivent pas le nouveau fond : ils restent ceux du département 42.
+Les calques OSM et DFCI suivent la zone extraite (dossier `geojson/zones/<nom>/`). L’altitude Copernicus reste celle du département 42.
 
 ### Fichiers et routes
 
@@ -167,7 +167,7 @@ Les jobs vivent en mémoire : redémarrer le serveur efface l’historique. Les 
 
 ## Carte opérationnelle
 
-Ces fonctions viennent de Cartoff. Elles restent actives quel que soit le fond PMTiles affiché. Les données géographiques livrées avec le dépôt couvrent le **département 42**.
+Ces fonctions viennent de Cartoff. Au démarrage elles portent sur le **département 42**. Après l’extraction d’une zone, les mêmes cases du menu lisent les fichiers OSM et DFCI produits pour cette emprise.
 
 ### Coordonnées
 
@@ -197,7 +197,7 @@ Guide opérationnel : **[SAR.md](SAR.md)**.
 
 **Personne** — points (dernière position connue, indice, repère), polyligne (axe probable), polygone (zone fouillée).
 
-**Aéronef** — station DF (marqueur orange) et relèvement : azimut 0–360°, portée en km (défaut 30). La carte trace la ligne de réception (pleine) et la réciproque (pointillée, +180°), avec aperçu pendant la saisie.
+**Aéronef** — station DF (marqueur orange) et relèvement : azimut 0–360°, portée en km (défaut 30). Un relevé pris à la boussole se choisit en **magnétique** ; la déclinaison Est (environ 2 à 3° en France, modifiable) est ajoutée pour obtenir l’azimut vrai utilisé par la carte et l’intersection. La carte trace la ligne de réception (pleine) et la réciproque (pointillée, +180°), avec aperçu pendant la saisie. L’export PDF de mission utilise jsPDF embarqué dans `js/`, sans CDN.
 
 **Intersection** — à partir de deux stations distinctes, calcul des fixes estimés (le meilleur est marqué), cercle d’incertitude (défaut 2 km), liste de visibilité, rapport texte ou GeoJSON.
 
@@ -236,10 +236,10 @@ Semver (`MAJEUR.MINEUR.PATCH`), centralisé dans **`version.json`**.
 
 ```json
 {
-  "version": "1.0.31",
+  "version": "5.0.1",
   "commit": "c0fe770",
-  "date": "2026-07-05",
-  "build": "2026-07-05"
+  "date": "2026-10-03",
+  "build": "2026-10-03"
 }
 ```
 
@@ -304,9 +304,10 @@ Création initiale sans incrément : `py -3 scripts/bump_version.py --init`
 
 ## Limites
 
-- Les calques, le DFCI, la recherche communale et l’altitude livrés ici couvrent la **Loire (42)**, pas la zone d’un fond extrait ailleurs.
+- Tant qu’aucune zone n’a été extraite, les calques, le DFCI, la recherche communale et l’altitude couvrent la **Loire (42)**. Une zone extraite remplace les calques OSM et DFCI du menu ; l’altitude reste celle du 42.
 - **Une extraction à la fois.** Zone max **12°** de côté. Tuiles jusqu’au zoom **15**, surzoom d’affichage jusqu’à **18**.
-- L’aperçu France et l’extraction demandent Internet. La consultation d’une archive déjà sur le disque, non.
+- L’aperçu France et l’extraction demandent Internet. La consultation d’une archive déjà sur le disque, les calques, les constats, les missions et l’export PDF, non.
+- La déclinaison proposée est une approximation pour la France (Est positif, époque 2026). Elle se corrige dans le panneau de relèvement.
 - Redémarrer `serve.py` oublie les jobs en cours. Les `.pmtiles` déjà écrits restent.
 - Pas d’authentification sur le serveur.
 

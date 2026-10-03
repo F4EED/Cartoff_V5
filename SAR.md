@@ -82,7 +82,7 @@ Pendant un dessin (polyligne, polygone, placement de point) : bannière **Termin
 | **Exporter rapport SAR** | `sar_rapport_<nom>.txt` | Rapport texte (mission aéronef avec fixe calculé) |
 | **Copier rapport** | Presse-papiers | Même contenu que le rapport .txt |
 
-Le PDF est généré côté navigateur (jsPDF + jspdf-autotable). Environnement hors ligne complet : copier les bibliothèques dans `js/` et remplacer les balises CDN dans `index.html` par des scripts locaux.
+Le PDF est généré côté navigateur (jsPDF + jspdf-autotable), livrés dans `js/jspdf.umd.min.js` et `js/jspdf.plugin.autotable.min.js`. Aucun CDN n’est nécessaire.
 
 ---
 
@@ -186,8 +186,8 @@ Un relèvement crée **deux lignes** automatiquement :
 
 | Ligne | Signification | Style carte |
 |-------|---------------|-------------|
-| **Réception** | Azimut mesuré depuis la station vers la source | Orange, trait plein |
-| **Réciproque** | Azimut + 180° (direction opposée) | Orange, pointillé |
+| **Réception** | Azimut **vrai** depuis la station vers la source | Orange, trait plein |
+| **Réciproque** | Azimut vrai + 180° (direction opposée) | Orange, pointillé |
 
 **Procédure :**
 
@@ -195,10 +195,12 @@ Un relèvement crée **deux lignes** automatiquement :
 2. Clic droit sur la carte → **Relevé DF** (menu **Opération de secours**), ou clic droit sur une station ▲ → **Relevé DF** (si plusieurs stations : choisir la station dans la liste).
 3. Dans le panneau :
    - **Azimut** : 0–360°, une décimale (ex. `127.5`),
+   - **Référentiel** : **Boussole (magnétique)** pour un relèvement pris à la boussole, ou **Azimut vrai** si la valeur est déjà corrigée,
+   - **Déclinaison (° Est)** : correction ajoutée au relèvement magnétique (`vrai = magnétique + déclinaison`). Proposition locale pour la France (environ 2 à 3° Est dans le Massif central), modifiable. Sans elle, 2,5° font environ 1,3 km d’écart à 30 km. L’intersection SAR-3 utilise toujours l’azimut vrai,
    - **Portée** : longueur affichée en km (défaut **30 km**),
    - **Équipe** : choisir l’équipe ayant effectué le relèvement (ou « Non assignée »),
    - Libellé et notes optionnels.
-4. **Aperçu en direct** : tant que le panneau est ouvert, les lignes réception et réciproque s’affichent en semi-transparent sur la carte ; elles se mettent à jour quand vous modifiez azimut ou portée.
+4. **Aperçu en direct** : tant que le panneau est ouvert, les lignes réception et réciproque s’affichent en semi-transparent sur la carte ; elles se mettent à jour quand vous modifiez l’azimut, le référentiel, la déclinaison ou la portée. Un clic sur la carte propose un azimut déjà vrai. Une saisie au clavier part en magnétique.
 5. **Enregistrer**.
 
 ### 6.4 Modifier ou supprimer
@@ -329,7 +331,7 @@ Chaque feature porte notamment :
 | `sar:mission_id` | ID de la mission parente |
 | `sar:role` | Rôle (`lkp`, `station_df`, `fixe_estime`, …) |
 | `sar:mission_type` | `personne` ou `aeronef` |
-| `sar:azimuth`, `sar:range_km` | Relèvement DF |
+| `sar:azimuth` (vrai), `sar:azimuth_input`, `sar:azimuth_frame`, `sar:declination_deg`, `sar:range_km` | Relèvement DF |
 | `sar:bearing_reciprocal` | `false` = réception, `true` = réciproque |
 | `sar:station_id`, `sar:bearing_group_id` | Liens station / paire de lignes |
 | `sar:quality_angle`, `sar:uncertainty_km` | SAR-3 |

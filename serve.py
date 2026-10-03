@@ -7,6 +7,7 @@ Routes ajoutées, reprises de https://github.com/F4EED/pmtiles :
 - ``POST /api/extract`` — lance une extraction Protomaps (202 + id de job)
 - ``GET /api/jobs/<id>`` — avancement
 - ``GET /api/download/<nom>.pmtiles`` — téléchargement du résultat
+- ``GET /api/layers/<nom>`` — manifeste OSM et DFCI de la zone extraite
 - ``GET /pmtiles/overview.pmtiles`` — relais Range vers le build Protomaps
   (fond France utilisé pendant la sélection d'une zone)
 """
@@ -24,6 +25,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 import extract
+import zone_layers
 
 SERVER_ID = "Cartoff/1.0 (PMTiles+Range)"
 
@@ -115,6 +117,19 @@ class PMTilesFriendlyHandler(SimpleHTTPRequestHandler):
                 self._send_json(404, {"error": "Job introuvable."})
                 return True
             self._send_json(200, job)
+            return True
+        if path.startswith("/api/layers/"):
+            name = path.rsplit("/", 1)[-1]
+            try:
+                name = extract.sanitize_name(name)
+            except extract.ExtractError:
+                self._send_json(400, {"error": "Nom de zone invalide."})
+                return True
+            manifest = zone_layers.manifest_for(name)
+            if not manifest:
+                self._send_json(404, {"error": "Pas de calques pour cette zone."})
+                return True
+            self._send_json(200, manifest)
             return True
         if path.startswith("/api/download/"):
             filename = path.rsplit("/", 1)[-1]

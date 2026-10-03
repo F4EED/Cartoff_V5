@@ -61,6 +61,12 @@
 
   const PROP_ELEVATION_M = 'sar:elevation_m';
 
+  const PROP_AZIMUTH_INPUT = 'sar:azimuth_input';
+
+  const PROP_AZIMUTH_FRAME = 'sar:azimuth_frame';
+
+  const PROP_DECLINATION = 'sar:declination_deg';
+
 
 
   const DEFAULT_RANGE_KM = 30;
@@ -913,11 +919,49 @@
 
     }
 
+    if (extra && extra[PROP_AZIMUTH_INPUT] != null) {
+
+      props[PROP_AZIMUTH_INPUT] = extra[PROP_AZIMUTH_INPUT];
+
+    }
+
+    if (extra && extra[PROP_AZIMUTH_FRAME] != null) {
+
+      props[PROP_AZIMUTH_FRAME] = extra[PROP_AZIMUTH_FRAME];
+
+    }
+
+    if (extra && extra[PROP_DECLINATION] != null) {
+
+      props[PROP_DECLINATION] = extra[PROP_DECLINATION];
+
+    }
+
     return props;
 
   }
 
 
+
+  /**
+   * Déclinaison magnétique approximative (degrés, Est positif) pour la métropole, époque 2026.
+   * Vrai = magnétique + déclinaison. À 30 km, 2,5° représentent environ 1,3 km.
+   * La valeur reste modifiable dans le panneau de relèvement.
+   */
+  function franceDeclinationDeg(lat, lon) {
+    if (!isFinite(lat) || !isFinite(lon)) return 2.5;
+    const decl = 2.15 + 0.22 * (Number(lon) - 2.5) - 0.04 * (Number(lat) - 46);
+    return Math.round(decl * 10) / 10;
+  }
+
+  function trueAzimuthFromInput(inputDeg, frame, declinationDeg) {
+    const input = normalizeAzimuth(inputDeg);
+    if (frame === 'magnetic') {
+      const decl = Number(declinationDeg);
+      return normalizeAzimuth(input + (isFinite(decl) ? decl : 0));
+    }
+    return input;
+  }
 
   global.CartoffSarTypes = {
 
@@ -954,6 +998,16 @@
     PROP_TEAM_NAME,
 
     PROP_ELEVATION_M,
+
+    PROP_AZIMUTH_INPUT,
+
+    PROP_AZIMUTH_FRAME,
+
+    PROP_DECLINATION,
+
+    franceDeclinationDeg,
+
+    trueAzimuthFromInput,
 
     FIX_COLOR_PALETTE,
 
