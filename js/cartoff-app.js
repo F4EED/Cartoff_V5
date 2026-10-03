@@ -76,19 +76,33 @@ let lastPointer = null;
 let coordsUpdateTimer = null;
 let mapIsInteracting = false;
 let elevationReady = false;
-let elevationLoadStarted = false;
+let elevationToken = 0;
 let communeIndexLoadScheduled = false;
 let communeLoadToken = 0;
 let situationDataLoaded = false;
 
-function ensureElevationLoaded() {
-  if (elevationLoadStarted) return;
-  elevationLoadStarted = true;
-  CartoffCoords.loadElevationGrid('elevation').then(ok => {
+function useElevationForBasemap(name) {
+  const token = ++elevationToken;
+  elevationReady = false;
+  const zoneUrl = name && name !== 'loire'
+    ? 'elevation/zones/' + encodeURIComponent(name)
+    : '';
+  const loadLoire = () => CartoffCoords.loadElevationGrid('elevation');
+  const pending = zoneUrl
+    ? CartoffCoords.loadElevationGrid(zoneUrl).then(ok => ok ? true : loadLoire())
+    : loadLoire();
+  pending.then(ok => {
+    if (token !== elevationToken) return;
     elevationReady = ok;
     if (lastPointer && !mapIsInteracting) refreshCoordsFromMap();
   });
 }
+
+function ensureElevationLoaded() {
+  useElevationForBasemap('loire');
+}
+
+window.cartoffUseElevation = useElevationForBasemap;
 
 function scheduleCommuneIndexLoad() {
   if (communeIndexLoadScheduled || communeIndex.length) return;

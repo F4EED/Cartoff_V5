@@ -148,6 +148,7 @@
       map.fitBounds(bounds, { padding: [36, 36], maxZoom: 15, animate: animate });
     }
     if (window.cartoffApplyZoneLayers) window.cartoffApplyZoneLayers(name);
+    if (window.cartoffUseElevation) window.cartoffUseElevation(name);
   }
 
   selectEl.addEventListener("change", async () => {

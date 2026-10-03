@@ -22,6 +22,7 @@ import uuid
 from datetime import date, timedelta
 from pathlib import Path
 
+import elevation_grid
 import zone_layers
 
 ROOT = Path(__file__).resolve().parent
@@ -210,6 +211,24 @@ def _run_extract(job: dict) -> None:
             except Exception as exc:  # noqa: BLE001
                 job["layers"] = {"ok": False, "errors": [str(exc)]}
                 _append_log(job, f"Calques OSM/DFCI : {exc}\n")
+            try:
+                meta = elevation_grid.build_elevation_grid(
+                    bbox["west"],
+                    bbox["south"],
+                    bbox["east"],
+                    bbox["north"],
+                    ROOT / "elevation" / "zones" / job["name"],
+                    stem="elev",
+                    log=lambda line: _append_log(job, line),
+                )
+                job["elevation"] = {
+                    "ok": True,
+                    "rows": meta.get("rows"),
+                    "cols": meta.get("cols"),
+                }
+            except Exception as exc:  # noqa: BLE001
+                job["elevation"] = {"ok": False, "error": str(exc)}
+                _append_log(job, f"Altitude Copernicus : {exc}\n")
             job["status"] = "done"
             job["download"] = f"/api/download/{job['name']}.pmtiles"
             _append_log(job, f"Terminé : {output.name} ({job['size']} octets)\n")
@@ -241,6 +260,7 @@ def public_job(job: dict) -> dict:
         "minzoom": job.get("minzoom"),
         "maxzoom": job.get("maxzoom"),
         "layers": job.get("layers"),
+        "elevation": job.get("elevation"),
     }
 
 

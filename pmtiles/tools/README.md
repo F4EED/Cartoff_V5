@@ -1,6 +1,6 @@
 # go-pmtiles
 
-> **Cartoff :** placer ici le binaire Windows `pmtiles.exe` (go-pmtiles v1.31.2). Il n’est pas versionné. `extract.py` et `scripts/build_loire_pmtiles.py` l’appellent pour créer une archive. La consultation d’un fond déjà présent n’en a pas besoin. `levelDiff: 0` est dans `js/basemap.js`. Voir [README PMTiles](../README.md).
+> **Cartoff :** `install.bat` ou `./install.sh` télécharge ici go-pmtiles v1.31.2 (`pmtiles.exe` sous Windows, `pmtiles` sous Linux). Le binaire n’est pas versionné. `extract.py` et `scripts/build_loire_pmtiles.py` l’appellent pour créer une archive. La consultation d’un fond déjà présent n’en a pas besoin. `levelDiff: 0` est dans `js/basemap.js`. Voir [README PMTiles](../README.md).
 
 The single-file utility for creating and working with [PMTiles](https://github.com/protomaps/PMTiles) archives.
 

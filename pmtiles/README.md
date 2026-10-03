@@ -65,7 +65,7 @@ python scripts/unpack_large_file.py -o chemin/vers/sortie.pmtiles
 
 ## Lancer la carte
 
-Placez une ou plusieurs archives `*.pmtiles` dans `pmtiles/`. Au démarrage, Cartoff charge **`loire.pmtiles`** s’il est présent, sinon l’archive la plus récente. Le menu **Fond de carte** permet d’en changer : l’emprise et les zooms sont lus dans l’en-tête du fichier.
+`install.bat` (Windows) ou `./install.sh` (Linux) installe Python si besoin, télécharge go-pmtiles et reconstitue `loire.pmtiles`. Au démarrage, Cartoff charge **`loire.pmtiles`** s’il est présent, sinon l’archive la plus récente. Le menu **Fond de carte** permet d’en changer : l’emprise et les zooms sont lus dans l’en-tête du fichier.
 
 Servez le projet via un serveur web (pas en `file://`) :
 
@@ -93,11 +93,11 @@ Avant d’afficher un fond, le client sonde `Range: bytes=0-16383` et exige une 
 
 ### Extraire une zone depuis la carte
 
-Dans le panneau **Fond de carte** : **Sélectionner une zone**. La carte quitte l’emprise du fond local et affiche la France (réseau routier Protomaps, villes principales). Sans réseau, l’aperçu retombe sur l’atlas local (départements et villes). Quatre clics, nom et zooms, puis **Extraire**. Annuler revient au fond précédent. `extract.py` appelle `pmtiles/tools/pmtiles.exe` sur le dernier build Protomaps (réseau requis, une extraction à la fois), puis `zone_layers.py` écrit les calques OSM et le DFCI dans `geojson/zones/<nom>/`. Le menu de droite suit l’archive affichée. L’altitude reste celle du 42.
+Dans le panneau **Fond de carte** : **Sélectionner une zone**. La carte quitte l’emprise du fond local et affiche la France (réseau routier Protomaps, villes principales). Sans réseau, l’aperçu retombe sur l’atlas local (départements et villes). Quatre clics, nom et zooms, puis **Extraire**. Annuler revient au fond précédent. `extract.py` appelle `pmtiles/tools/pmtiles.exe` sur le dernier build Protomaps (réseau requis, une extraction à la fois), puis `zone_layers.py` écrit les calques OSM et le DFCI dans `geojson/zones/<nom>/`, et `elevation_grid.py` écrit l’altitude Copernicus dans `elevation/zones/<nom>/`. Le menu et l’altitude suivent l’archive affichée.
 
 ### Autre gros fichier : altitude
 
-Le MNT Copernicus (`elevation/loire_elev.bin`, ~58 Mo) suit le même principe : non versionné, à générer avec `python scripts/build_elevation_loire.py` — voir [elevation/README.md](../elevation/README.md).
+Le MNT Copernicus de la Loire (`elevation/loire_elev.bin`, ~58 Mo) n’est pas versionné. `install.bat` ou `./install.sh` le produit. Une extraction de zone écrit la sienne dans `elevation/zones/<nom>/`. Voir [elevation/README.md](../elevation/README.md).
 
 ---
 
@@ -148,7 +148,7 @@ python scripts/unpack_large_file.py pmtiles/ma-region.pmtiles.manifest.json
 
 Déposez le `.pmtiles` dans `pmtiles/` (ou laissez l’extraction carte l’y écrire) puis rechargez la page. Le menu **Fond de carte** le liste via `GET /api/files`. L’emprise et le zoom minimal viennent de l’en-tête (`js/basemap.js`, `levelDiff: 0`).
 
-`start.bat` reconstitue toujours `loire.pmtiles` s’il manque. Une archive seulement déposée à la main n’a pas de catalogue OSM/DFCI : le menu reste sur les fichiers du 42. Une extraction depuis la carte produit ce catalogue (`GET /api/layers/<nom>`). L’altitude Copernicus reste celle du département 42.
+`start.bat` reconstitue toujours `loire.pmtiles` s’il manque. Une archive seulement déposée à la main n’a pas de catalogue OSM/DFCI ni de grille d’altitude : le menu et l’altitude restent ceux de la Loire. Une extraction depuis la carte produit le catalogue (`GET /api/layers/<nom>`) et `elevation/zones/<nom>/`.
 
 `.gitignore` ignore déjà `pmtiles/*.pmtiles`. Versionnez les morceaux et le manifeste, pas l’archive complète.
 

@@ -278,9 +278,13 @@
           const layersNote = job.layers && job.layers.ok
             ? " Calques OSM et DFCI de la zone prêts dans le menu."
             : " Fond prêt. Une partie des calques OSM ou DFCI n’a pas pu être chargée.";
+          const elevNote = job.elevation && job.elevation.ok
+            ? " Altitude Copernicus de la zone prête."
+            : " Altitude de la zone indisponible : la grille Loire est utilisée là où elle couvre.";
           setStatus(
             "Fond chargé : <strong>" + escapeHtml(job.name) + ".pmtiles</strong> (" + mb + " Mo)." +
               layersNote +
+              elevNote +
               ' <a href="' + escapeHtml(job.download) + '" download="' + escapeHtml(job.name) + '.pmtiles">Télécharger</a>',
             "ok"
           );

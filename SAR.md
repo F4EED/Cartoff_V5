@@ -23,7 +23,7 @@ Les éléments sont saisis sur la carte (menu contextuel **Opération de secours
 
 ## 2. Accès et prérequis
 
-1. Lancer Cartoff via **`start.bat`** ou **`python serve.py`**, puis ouvrir **http://localhost:8000/** (le fond de carte et les calques ne fonctionnent pas en `file://`).
+1. Installer une fois avec **`install.bat`** (Windows) ou **`./install.sh`** (Linux) : fond Loire, go-pmtiles et altitude Copernicus. Puis lancer Cartoff via **`start.bat`** ou **`python serve.py`**. Ouvrir **http://localhost:8000/** (le fond de carte et les calques ne fonctionnent pas en `file://`). L’altitude affichée suit le fond : Loire, ou la zone extraite.
 2. Dans la barre latérale, ouvrir la section **Missions SAR**.
 3. Cocher **Afficher sur la carte** pour voir les symboles SAR (calque dédié `sarPane`, au-dessus des constats).
 

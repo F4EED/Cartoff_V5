@@ -354,22 +354,35 @@
   };
 
   let elevationGrid = null;
+  let elevationRequest = 0;
 
   async function loadElevationGrid(baseUrl) {
+    const request = ++elevationRequest;
     const root = (baseUrl || 'elevation').replace(/\/$/, '');
-    try {
-      const metaRes = await fetch(`${root}/loire_elev.meta.json`);
-      const binRes = await fetch(`${root}/loire_elev.bin`);
-      if (!metaRes.ok || !binRes.ok) throw new Error('fichiers altitude absents');
-      const meta = await metaRes.json();
-      const buf = await binRes.arrayBuffer();
-      elevationGrid = { meta, heights: new Int16Array(buf) };
-      return true;
-    } catch (err) {
-      console.warn('Altitude offline non disponible :', err.message || err);
-      elevationGrid = null;
-      return false;
+    const pairs = [
+      ['elev.meta.json', 'elev.bin'],
+      ['loire_elev.meta.json', 'loire_elev.bin']
+    ];
+    let lastError = 'fichiers altitude absents';
+    for (let i = 0; i < pairs.length; i++) {
+      try {
+        const metaRes = await fetch(`${root}/${pairs[i][0]}`);
+        const binRes = await fetch(`${root}/${pairs[i][1]}`);
+        if (request !== elevationRequest) return false;
+        if (!metaRes.ok || !binRes.ok) throw new Error('fichiers altitude absents');
+        const meta = await metaRes.json();
+        const buf = await binRes.arrayBuffer();
+        if (request !== elevationRequest) return false;
+        elevationGrid = { meta, heights: new Int16Array(buf) };
+        return true;
+      } catch (err) {
+        lastError = err.message || String(err);
+      }
     }
+    if (request !== elevationRequest) return false;
+    console.warn('Altitude offline non disponible :', lastError);
+    elevationGrid = null;
+    return false;
   }
 
   function getElevation(lat, lon) {

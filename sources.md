@@ -23,7 +23,7 @@ Dernière mise à jour : octobre 2026 (Cartoff 5.0.1).
 |---------|--------|----------------------|
 | `elevation/loire_elev.bin` | [Copernicus DEM GLO-30](https://spacedata.copernicus.eu/) (EU-DEM ~30 m), dalles COG sur `copernicus-dem-30m.s3.eu-central-1.amazonaws.com` | Usage libre selon les [conditions Copernicus](https://spacedata.copernicus.eu/) — voir aussi le champ `license` dans `elevation/loire_elev.meta.json`. |
 | `elevation/loire_elev.meta.json` | Métadonnées générées par `scripts/build_elevation_loire.py` | Emprise : 45,0°–46,5° N, 3,5°–5,0° E (identique au fond PMTiles). |
-| Script de génération | `scripts/build_elevation_loire.py` | Nécessite `rasterio`, `numpy`, `shapely` et une connexion Internet pour le téléchargement initial. |
+| Script de génération | `elevation_grid.py`, appelé par `scripts/build_elevation_loire.py` et par `extract.py` | Nécessite `rasterio`, `numpy` et une connexion Internet. L’installation locale lance la grille Loire. Chaque extraction PMTiles écrit `elevation/zones/<nom>/`. |
 
 Le binaire `loire_elev.bin` n'est pas versionné (`.gitignore`, ~58 Mo). Voir `elevation/README.md`.
 

@@ -13,7 +13,7 @@ Ce dépôt réunit deux projets :
 | [F4EED/cartoff](https://github.com/F4EED/cartoff) | La carte opérationnelle : calques du département de la Loire (42), coordonnées, DFCI, altitude, constats, missions SAR, imports locaux. |
 | [F4EED/pmtiles](https://github.com/F4EED/pmtiles) | Le chargement des archives PMTiles et leur usage : liste des fonds, lecture de l’en-tête, HTTP Range, extraction d’une zone en quatre clics, aperçu France pour choisir l’emprise. |
 
-Le fond opérationnel par défaut reste **la Loire** (`loire.pmtiles`), avec les calques OSM, le DFCI et l’altitude du département 42. Choisir une nouvelle zone ouvre un aperçu de la France. Une fois l’archive extraite, le menu de droite charge les calques OSM et le DFCI de cette emprise. L’altitude reste celle du 42.
+Le fond opérationnel par défaut reste **la Loire** (`loire.pmtiles`), avec les calques OSM, le DFCI et l’altitude Copernicus du département 42. Choisir une nouvelle zone ouvre un aperçu de la France. Une fois l’archive extraite, le menu de droite charge les calques OSM, le DFCI et l’altitude Copernicus de cette emprise.
 
 > Pensé pour les environnements dégradés.  
 > Après préparation, la carte, les constats et les missions fonctionnent sans réseau.  
@@ -34,22 +34,41 @@ Le cas de départ est une **crue de la Loire** : visualiser le secteur, poser de
 ## Démarrage
 
 ```bash
-git clone https://github.com/F4EED/cartoff.git
-cd cartoff
+git clone https://github.com/F4EED/Cartoff_V5.git
+cd Cartoff_V5
+```
 
-# Reconstituer le fond Loire (morceaux versionnés → pmtiles/loire.pmtiles)
-python scripts/unpack_large_file.py
+Installation locale (Python 3.10+, go-pmtiles, reconstitution de `loire.pmtiles`, contrôle des calques du 42) :
 
-# Windows : libère le port 8000, reconstruit loire.pmtiles s’il manque, lance le serveur
+```bat
+install.bat
+```
+
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+Les deux scripts vérifient les prérequis et les installent s’ils manquent (winget sous Windows, apt/dnf/pacman sous Linux). Une connexion est nécessaire pendant cette étape. Ensuite :
+
+```bat
 start.bat
+```
 
-# Ou, à la main (HTTP Range requis, port 8000 par défaut)
-python serve.py -p 8000
+```bash
+python3 serve.py -p 8000
 ```
 
 Ouvrir **http://localhost:8000/** dans le navigateur.
 
-Le binaire **go-pmtiles** (`pmtiles/tools/pmtiles.exe`, v1.31.2) sert uniquement à **créer** une archive. Consulter `loire.pmtiles` ou une archive déjà présente n’en a pas besoin. S’il manque :
+L’installation télécharge aussi le MNT Copernicus de la Loire (`elevation/loire_elev.bin`, environ 58 Mo). Pour le régénérer seul :
+
+```bash
+pip install rasterio numpy shapely
+python scripts/build_elevation_loire.py
+```
+
+Le binaire **go-pmtiles** (v1.31.2) est téléchargé par le script d’installation. Il sert à **créer** une archive. Consulter `loire.pmtiles` ou une archive déjà présente n’en a pas besoin. S’il manque encore :
 
 ```text
 https://github.com/protomaps/go-pmtiles/releases/download/v1.31.2/go-pmtiles_1.31.2_Windows_x86_64.zip
@@ -57,12 +76,7 @@ https://github.com/protomaps/go-pmtiles/releases/download/v1.31.2/go-pmtiles_1.3
 
 Le placer dans `pmtiles/tools/pmtiles.exe` (ou `pmtiles/tools/pmtiles` sous Linux / macOS).
 
-L’altitude est optionnelle : voir [elevation/README.md](elevation/README.md).
-
-```bash
-pip install rasterio numpy shapely
-python scripts/build_elevation_loire.py
-```
+Détail de l’altitude : [elevation/README.md](elevation/README.md).
 
 Depuis la carte, le bouton **Documentation** ouvre ce fichier (`docs.html` ; `readme.html` redirige les anciens signets).
 
@@ -100,7 +114,7 @@ Pour chaque archive, le client lit l’en-tête PMTiles (emprise, `minZoom`, `ma
 1. **Sélectionner une zone.** La carte quitte l’emprise du fond local. Elle affiche la France : réseau routier Protomaps (le chevelu) et les villes principales (préfectures dès l’aperçu, sous-préfectures en zoomant). Les contours de départements restent en surimpression.
 2. Quatre clics délimitent le secteur. L’ordre est sans importance : les sommets sont réordonnés.
 3. Donner un nom et une plage de zooms, puis **Extraire**.
-4. L’avancement s’affiche dans le panneau. À la fin, le nouveau fichier est proposé dans le menu et affiché. Les calques OSM (communes, urgence, santé, services, toponymie) et le carroyage DFCI de la même emprise sont écrits dans `geojson/zones/<nom>/`. Le menu de droite les prend à la place des fichiers du département 42. Revenir sur `loire` restaure les calques Loire. L’altitude Copernicus reste celle du 42.
+4. L’avancement s’affiche dans le panneau. À la fin, le nouveau fichier est proposé dans le menu et affiché. Les calques OSM (communes, urgence, santé, services, toponymie) et le carroyage DFCI de la même emprise sont écrits dans `geojson/zones/<nom>/`. L’altitude Copernicus de la même emprise est écrite dans `elevation/zones/<nom>/`. Le menu et l’altitude suivent l’archive. Revenir sur `loire` restaure les calques et la grille de la Loire.
 5. **Annuler** (ou Échap dans la fenêtre) revient au fond et à la vue précédents.
 
 Hors ligne, ou si le relais vers Protomaps échoue, l’aperçu retombe sur un atlas : départements en aplat et les mêmes villes. On peut encore dessiner la zone ; l’extraction, elle, a besoin du réseau.
@@ -109,7 +123,7 @@ Le chevelu n’est pas téléchargé en entier. Le navigateur demande de petites
 
 Compter quelques minutes et de l’ordre de 20 à 200 Mo pour un département aux zooms 9–15. Une seule extraction à la fois. La zone est bornée à **12° de côté**. Les zooms de tuiles vont de 0 à **15**.
 
-Les calques OSM et DFCI suivent la zone extraite (dossier `geojson/zones/<nom>/`). L’altitude Copernicus reste celle du département 42.
+Les calques OSM, le DFCI et l’altitude Copernicus suivent la zone extraite (`geojson/zones/<nom>/`, `elevation/zones/<nom>/`).
 
 ### Fichiers et routes
 
@@ -123,6 +137,7 @@ Les calques OSM et DFCI suivent la zone extraite (dossier `geojson/zones/<nom>/`
 | `js/zone-extract.js` | Quatre clics, fenêtre, suivi du job |
 | `extract.py` | Validation, un job à la fois, appel de go-pmtiles, archives produites dans `pmtiles/` |
 | `zone_layers.py` | Après une extraction réussie : calques OSM (Overpass) et carroyage DFCI de l’emprise |
+| `elevation_grid.py` | Grille Copernicus DEM de la Loire à l’installation, et de la zone à l’extraction |
 | `serve.py` | Fichiers statiques, HTTP Range, API JSON |
 | `js/jspdf.umd.min.js`, `js/jspdf.plugin.autotable.min.js` | Export PDF de mission, sans CDN |
 | `data/france-departements.geojson` | Contours des départements (aperçu de sélection) |
@@ -166,6 +181,8 @@ Les calques OSM et DFCI suivent la zone extraite (dossier `geojson/zones/<nom>/`
         |                                  |  (tuiles de la zone seulement)
         |                                  |  zone_layers.py
         |                                  |  (OSM + DFCI, réseau Overpass)
+        |                                  |  elevation_grid.py
+        |                                  |  (Copernicus DEM)
         |                                  v
         |                            pmtiles/<nom>.pmtiles
         |                            geojson/zones/<nom>/
@@ -181,7 +198,7 @@ Ces fonctions viennent de Cartoff. Au démarrage elles portent sur le **départe
 
 ### Coordonnées
 
-Boîte au survol : WGS84, UTM, code **DFCI**, commune, altitude (MNT Copernicus, si `elevation/loire_elev.bin` a été généré).
+Boîte au survol : WGS84, UTM, code **DFCI**, commune, altitude (MNT Copernicus de la Loire, ou de la zone extraite).
 
 ### Calques GeoJSON (OSM)
 
@@ -314,7 +331,7 @@ Création initiale sans incrément : `py -3 scripts/bump_version.py --init`
 
 ## Limites
 
-- Tant qu’aucune zone n’a été extraite, les calques, le DFCI, la recherche communale et l’altitude couvrent la **Loire (42)**. Une zone extraite remplace les calques OSM et DFCI du menu ; l’altitude reste celle du 42.
+- Tant qu’aucune zone n’a été extraite, les calques, le DFCI, la recherche communale et l’altitude couvrent la **Loire (42)**. Une zone extraite remplace les calques OSM, le DFCI et l’altitude du menu. Si la grille de la zone manque, l’altitude Loire est utilisée là où elle couvre.
 - **Une extraction à la fois.** Zone max **12°** de côté. Tuiles jusqu’au zoom **15**, surzoom d’affichage jusqu’à **18**.
 - L’aperçu France et l’extraction demandent Internet. La consultation d’une archive déjà sur le disque, les calques, les constats, les missions et l’export PDF, non.
 - La déclinaison proposée est une approximation pour la France (Est positif, époque 2026). Elle se corrige dans le panneau de relèvement.
