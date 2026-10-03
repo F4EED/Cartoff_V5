@@ -2,7 +2,7 @@
 
 Ce document recense les sources utilisées dans le projet **Cartoff** (cartographie hors ligne pour la gestion de crise, département de la Loire — 42).
 
-Dernière mise à jour : juillet 2026.
+Dernière mise à jour : octobre 2026 (Cartoff 5.0.1).
 
 ---
 
@@ -11,7 +11,7 @@ Dernière mise à jour : juillet 2026.
 | Élément | Source | Licence / remarques |
 |---------|--------|----------------------|
 | `pmtiles/*.pmtiles` | Tuiles vectorielles au format [PMTiles](https://github.com/protomaps/PMTiles), affichées via [protomaps-leaflet](https://github.com/protomaps/PMTiles) (`flavor: light`, `lang: fr`, **`levelDiff: 0`**, `maxDataZoom` lu dans l’archive) | Données [OpenStreetMap](https://www.openstreetmap.org/). Défaut : `loire.pmtiles` (zoom tuiles **9–15**, surzoom carte jusqu’à 18). Autres archives : menu **Fond de carte**, ou extraction d’une zone (`extract.py`, repris de [F4EED/pmtiles](https://github.com/F4EED/pmtiles)). Fichier Loire découpé pour GitHub — voir `pmtiles/README.md`. |
-| Tuiles OSM en ligne (alternative commentée) | [OpenStreetMap](https://www.openstreetmap.org/) — `tile.openstreetmap.org` | Non utilisée par défaut ; présente en commentaire dans `index.html`. |
+| Tuiles raster OSM en ligne | [OpenStreetMap](https://www.openstreetmap.org/) — `tile.openstreetmap.org` | Non utilisées. Le fond est le PMTiles local. L’attribution OSM est dans `js/cartoff-app.js`. |
 
 **Serveur requis :** `serve.py` ou `start.bat` (HTTP Range). Voir `pmtiles/README.md` pour `levelDiff: 0` et le dépannage fond gris.
 
@@ -98,9 +98,9 @@ Les calques suffixés `*_osm_42` sont extraits du département 42 (`area["ISO316
 
 **Licence :** [Open Database License (ODbL) 1.0](https://opendatacommons.org/licenses/odbl/) — © contributeurs OpenStreetMap.
 
-### Calques branchés dans `index.html`
+### Calques branchés
 
-Tous les calques ci-dessous sont listés dans `geojsonFiles` (`index.html`). **Tous sont en lazy load** (sauf le fond PMTiles, toujours actif).
+Tous les calques ci-dessous sont listés dans `geojsonFiles` (`js/cartoff-app.js`). **Tous sont en lazy load** (sauf le fond PMTiles, toujours actif). Au démarrage ils pointent vers `geojson/D42/`. Après une extraction, `zone_layers.py` écrit les mêmes thèmes dans `geojson/zones/<nom>/` (Overpass sur la bbox, DFCI calculé en Lambert II étendu) et le menu suit l’archive via `GET /api/layers/<nom>`. Revenir sur `loire` restaure le 42. Ces catalogues de zone ne sont pas versionnés (`.gitignore`).
 
 | Calque (UI) | Fichier | Script d'export | Critères OSM principaux |
 |-------------|---------|-----------------|-------------------------|
@@ -137,7 +137,7 @@ Tous les calques ci-dessous sont listés dans `geojsonFiles` (`index.html`). **T
 
 ### Optimisations d'affichage (calques OSM)
 
-Pour les polygones denses (communes, zones industrielles / habitation, sites, DFCI), `index.html` utilise :
+Pour les polygones denses (communes, zones industrielles / habitation, sites, DFCI), `js/cartoff-app.js` utilise :
 
 - un rendu **canvas** partagé (`L.canvas`) ;
 - un `smoothFactor` adapté (jusqu'à 2,5 sur DFCI 2 km) ;
@@ -198,9 +198,9 @@ Filtre « Afficher les inactifs » : masque les constats au statut inactif par d
 
 | Élément | Source | Licence / remarques |
 |---------|--------|----------------------|
-| `js/sar-types.js` | Registre Cartoff (`window.CartoffSarTypes`) | Rôles géométriques, types de mission, propriétés `sar:*`, géodésie (`destinationPoint`, `computeAllIntersections`) |
-| `js/sar-missions.js` | Module Cartoff (`window.CartoffSar`) | Missions, saisie, aperçu relèvement, rendu multi-fixes, checklist visibilité, persistance, export |
-| Panneau `sarPane` (z-index 620) | `index.html` | Calque au-dessus des constats (`situationPane` 610) |
+| `js/sar-types.js` | Registre Cartoff (`window.CartoffSarTypes`) | Rôles géométriques, types de mission, propriétés `sar:*`, géodésie, déclinaison (`franceDeclinationDeg`, `trueAzimuthFromInput`) |
+| `js/sar-missions.js` | Module Cartoff (`window.CartoffSar`) | Missions, saisie magnétique/vrai, aperçu relèvement, rendu multi-fixes, checklist visibilité, persistance, export PDF |
+| Panneau `sarPane` (z-index 620) | `js/cartoff-app.js` | Calque au-dessus des constats (`situationPane` 610) |
 
 ### Types de mission
 
@@ -228,7 +228,8 @@ Filtre « Afficher les inactifs » : masque les constats au statut inactif par d
 | Propriété | Usage |
 |-----------|--------|
 | `sar:mission_id`, `sar:role`, `sar:mission_type` | Tous les éléments |
-| `sar:azimuth` | Azimut du relèvement (°) |
+| `sar:azimuth` | Azimut **vrai** utilisé pour le tracé et l’intersection SAR-3 (°) |
+| `sar:azimuth_input`, `sar:azimuth_frame`, `sar:declination_deg` | Valeur saisie, référentiel `magnetic` ou `true`, déclinaison Est (°). Un relevé ancien sans ces champs est traité comme déjà vrai |
 | `sar:range_km` | Portée affichée (km) |
 | `sar:bearing_reciprocal` | `false` = ligne réception, `true` = ligne réciproque (+180°) |
 | `sar:station_id` | ID de la feature `station_df` parente |
@@ -248,7 +249,7 @@ Champ mission : `visibleFixIds[]` — IDs des fixes affichés sur la carte (pers
 
 - **Mode SAR** (mission active) : menu contextuel carte + boutons barre latérale
 - **Personne** : points immédiats ; polylignes / polygones avec **Terminer** / **Annuler** / **Échap**
-- **Aéronef** : **Station DF** (point + panneau, horodatage modifiable) ; **Relèvement** (azimut + portée → 2 lignes auto, **aperçu carte** pendant la saisie) ; **Intersection SAR-3** (multi-candidats, checklist visibilité, rapport)
+- **Aéronef** : **Station DF** (point + panneau, horodatage modifiable) ; **Relèvement** (azimut + référentiel magnétique/vrai + déclinaison Est + portée → 2 lignes auto, **aperçu carte** pendant la saisie) ; **Intersection SAR-3** sur l’azimut vrai (multi-candidats, checklist visibilité, rapport, PDF local)
 - Mission **clôturée** : consultation seule (opacité réduite, pas de nouvelle saisie)
 
 ### Persistance et export
@@ -290,7 +291,7 @@ Géométries prises en charge : `Point`, `LineString`, `Polygon` et variantes `M
 
 ### Interface
 
-Section **Importer données externes (kml,kmz, geojson)** (`index.html`) :
+Section **Importer données externes (kml,kmz, geojson)** (`index.html`, logique dans `js/file-import.js`) :
 
 - Bouton « Choisir un fichier… » (`input type=file`, `multiple`)
 - Liste des calques importés : visibilité (case), pastille couleur, suppression (×)
@@ -328,7 +329,7 @@ D'anciens calques issus de la **BDTOPO** de l'[IGN](https://www.ign.fr/) (retrai
 |----------------------|-----------|
 | `Zone_habitation.geojson` | Remplacé par `zones_habitation_osm_42.json` dans l'interface |
 | `Toponyme.geojson` | Remplacé par les calques toponymie OSM |
-| `Lieu_dit_non_habite.geojson` | Non branché dans `index.html` |
+| `Lieu_dit_non_habite.geojson` | Non branché dans `js/cartoff-app.js` |
 | `communes-42-loire.geojson` | Limites administratives ; remplacé par `communes_contours_osm_42.geojson` pour l'affichage commune |
 
 **Licence IGN :** selon le produit sur le [Géoportail](https://geoportail.gn.fr/) ou [data.gouv.fr](https://www.data.gouv.fr/) — en général [Licence Ouverte Etalab 2.0](https://www.etalab.gouv.fr/licence-ouverte-open-licence).
@@ -346,7 +347,9 @@ D'anciens calques issus de la **BDTOPO** de l'[IGN](https://www.ign.fr/) (retrai
 | [proj4js](https://github.com/proj4js/proj4js) | MIT | Projections UTM |
 | [JSZip](https://stuk.github.io/jszip/) | MIT / GPL-3.0 | Décompression KMZ (`js/jszip.min.js`) |
 | [@mapbox/togeojson](https://github.com/mapbox/togeojson) | BSD-2-Clause | KML → GeoJSON (`js/togeojson.js`) |
-| Python 3 | — | `serve.py`, exports Overpass (`scripts/export_osm_*.py`), MNT (`build_elevation_loire.py`), DFCI (`build_dfci_loire.py`), découpage (`pack_large_file.py`) |
+| [jsPDF](https://github.com/parallax/jsPDF) 2.5.2 + [jspdf-autotable](https://github.com/simonbengtsson/jsPDF-AutoTable) 3.8.4 | MIT | Export PDF de mission (`js/jspdf.umd.min.js`, `js/jspdf.plugin.autotable.min.js`), embarqués, sans CDN |
+| [marked](https://github.com/markedjs/marked) | MIT | Rendu des guides dans `docs.html` (`js/marked.min.js`) |
+| Python 3 | — | `serve.py`, `extract.py`, `zone_layers.py`, exports Overpass (`scripts/export_osm_*.py`), MNT (`build_elevation_loire.py`), DFCI Loire (`build_dfci_loire.py`), découpage (`pack_large_file.py`) |
 | `serve.py` | Cartoff | Serveur statique avec HTTP **Range** (206) — requis pour PMTiles |
 | `start.bat` | Cartoff | Windows : libère le port 8000, vérifie `loire.pmtiles`, lance `serve.py` |
 | QGIS | — | Préparation / conversion des GeoJSON historiques (fichiers `.qmd` associés) |
@@ -365,7 +368,7 @@ D'anciens calques issus de la **BDTOPO** de l'[IGN](https://www.ign.fr/) (retrai
 
 ## Attribution recommandée
 
-Alignée sur le contrôle d'attribution Leaflet dans `index.html` :
+Alignée sur le contrôle d'attribution Leaflet dans `js/cartoff-app.js` :
 
 | Donnée | Texte suggéré |
 |--------|---------------|

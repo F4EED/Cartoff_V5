@@ -115,11 +115,16 @@ Les calques OSM et DFCI suivent la zone extraite (dossier `geojson/zones/<nom>/`
 
 | Chemin | Rôle |
 |--------|------|
-| `js/basemap.js` | Liste, sonde Range, lit l’en-tête, affiche le fond, suspend la vue locale pendant la sélection |
+| `index.html` | Balisage de la page : menus, panneaux, balises de script |
+| `css/cartoff.css` | Style de l’interface |
+| `js/cartoff-app.js` | Carte, calques, constats, recherche, menus |
+| `js/basemap.js` | Liste, sonde Range, lit l’en-tête, affiche le fond (`levelDiff: 0`), suspend la vue locale pendant la sélection |
 | `js/zone-overview.js` | Aperçu France (chevelu + villes, atlas en secours) |
 | `js/zone-extract.js` | Quatre clics, fenêtre, suivi du job |
 | `extract.py` | Validation, un job à la fois, appel de go-pmtiles, archives produites dans `pmtiles/` |
+| `zone_layers.py` | Après une extraction réussie : calques OSM (Overpass) et carroyage DFCI de l’emprise |
 | `serve.py` | Fichiers statiques, HTTP Range, API JSON |
+| `js/jspdf.umd.min.js`, `js/jspdf.plugin.autotable.min.js` | Export PDF de mission, sans CDN |
 | `data/france-departements.geojson` | Contours des départements (aperçu de sélection) |
 | `data/france-villes.geojson` | Villes principales de France (aperçu de sélection) |
 | `pmtiles/tools/pmtiles.exe` | CLI go-pmtiles — absente du clone si non téléchargée |
@@ -131,13 +136,15 @@ Les calques OSM et DFCI suivent la zone extraite (dossier `geojson/zones/<nom>/`
 | `POST /api/extract` | Lance une extraction (202 + identifiant de job) |
 | `GET /api/jobs/<id>` | Avancement |
 | `GET /api/download/<nom>.pmtiles` | Téléchargement du résultat |
-| `GET /pmtiles/overview.pmtiles` | Relais Range vers le build Protomaps (aperçu France) |
+| `GET /api/layers/<nom>` | Manifeste OSM et DFCI d’une zone extraite (`loire` ou inconnu : calques du 42) |
+| `GET /pmtiles/overview.pmtiles` | Relais Range vers le build Protomaps (aperçu France, réseau) |
 | `GET /pmtiles/<nom>.pmtiles` | Archive locale, avec `Range` |
 
 ```
   Navigateur                         Serveur Python
-  index.html                         serve.py
-  Leaflet · PMTiles · Protomaps
+  index.html · css/cartoff.css
+  js/cartoff-app.js                  serve.py
+  Leaflet · PMTiles · Protomaps · jsPDF
         |                                  |
         |  GET /pmtiles/*.pmtiles (Range)  |
         |  GET /api/files                  |
@@ -157,8 +164,11 @@ Les calques OSM et DFCI suivent la zone extraite (dossier `geojson/zones/<nom>/`
         |                                  |       v
         |                                  |  pmtiles/tools/pmtiles.exe
         |                                  |  (tuiles de la zone seulement)
+        |                                  |  zone_layers.py
+        |                                  |  (OSM + DFCI, réseau Overpass)
         |                                  v
         |                            pmtiles/<nom>.pmtiles
+        |                            geojson/zones/<nom>/
 ```
 
 Les jobs vivent en mémoire : redémarrer le serveur efface l’historique. Les fichiers produits restent dans `pmtiles/`. Il n’y a pas d’authentification : le serveur est prévu pour un poste ou un réseau de confiance (`0.0.0.0`, port 8000).
@@ -237,7 +247,7 @@ Semver (`MAJEUR.MINEUR.PATCH`), centralisé dans **`version.json`**.
 ```json
 {
   "version": "5.0.1",
-  "commit": "c0fe770",
+  "commit": "758d6c6",
   "date": "2026-10-03",
   "build": "2026-10-03"
 }

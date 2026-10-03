@@ -35,6 +35,8 @@ Le script :
 
 Si les fichiers existent déjà, le script s'arrête sauf avec `--force`.
 
+L’altitude affichée reste cette grille du département 42, y compris lorsqu’un autre fond PMTiles et ses calques OSM/DFCI sont sélectionnés.
+
 ## Utilisation dans Cartoff
 
 1. Générer la grille (ci-dessus) ou copier `loire_elev.bin` depuis une autre installation.

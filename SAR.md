@@ -369,7 +369,9 @@ location.reload();
 - **Stockage navigateur** : effacer les données du site ou changer de poste **perd** les missions non exportées.
 - **Emprise carte** : optimisée pour la Loire (42) ; utilisable ailleurs si le fond et les calques couvrent la zone.
 
-**Rappel rapport exporté :** *« Estimation indicative basée sur l'intersection géodésique de relèvements DF. Ne remplace pas une analyse opérationnelle ni des données officielles. Outil 100 % offline — vérifier sur le terrain. »*
+**Rappel du PDF exporté :** *« Estimation indicative. L'intersection utilise l'azimut vrai (boussole + déclinaison Est). Ne remplace pas une analyse opérationnelle ni des données officielles. Outil hors ligne — vérifier la déclinaison et le terrain. »*
+
+La déclinaison proposée est une approximation France 2026 (Est positif), modifiable. Sans elle, 2,5° font environ 1,3 km d’écart à 30 km. Le meilleur fixe est marqué ★ sur la carte et `*` dans le PDF (police Helvetica).
 
 ---
 
@@ -392,7 +394,7 @@ location.reload();
 1. Placer **Station A**, **Station B**, **Station C** aux positions réelles des véhicules DF.
 2. Saisir un relèvement depuis chaque station (vérifier l’aperçu avant enregistrement).
 3. **Calculer intersection** → jusqu’à 3 candidats (A+B, A+C, B+C).
-4. Comparer les angles de coupe ; afficher le candidat ★ et ceux qui restent plausibles opérationnellement.
+4. Comparer les angles de coupe ; afficher le candidat ★ (carte) et ceux qui restent plausibles opérationnellement. Contrôler que les relèvements boussole sont en **magnétique** avec la bonne déclinaison.
 5. **Exporter rapport SAR** pour transmission au PC de coordination.
 
 Si les trois azimuts se croisent théoriquement en un seul point mais qu’un seul candidat apparaît, deux paires ont probablement été **rejetées** (géométrie faible ou incohérence) : contrôlez chaque azimut et l’identité des stations.
@@ -403,7 +405,7 @@ Si les trois azimuts se croisent théoriquement en un seul point mais qu’un se
 
 | Fichier | Rôle |
 |---------|------|
-| `js/sar-types.js` | Rôles, types de mission, géodésie (`intersectBearings`, `computeAllIntersections`) |
+| `js/sar-types.js` | Rôles, types de mission, géodésie (`intersectBearings`, `computeAllIntersections`), déclinaison (`franceDeclinationDeg`, `trueAzimuthFromInput`) |
 | `js/sar-missions.js` | UI, persistance, rendu carte, export |
 | `scripts/test_sar_missions.py` | Tests structure hors navigateur |
 
@@ -415,4 +417,4 @@ python scripts/test_sar_missions.py
 
 ---
 
-*Dernière mise à jour : juillet 2026 — Cartoff POC gestion de crise hors ligne.*
+*Dernière mise à jour : octobre 2026 — Cartoff 5.0.1, gestion de crise hors ligne.*

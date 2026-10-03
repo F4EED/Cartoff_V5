@@ -1,6 +1,6 @@
 # go-pmtiles
 
-> **Cartoff :** binaire Windows `pmtiles.exe` fourni dans ce dossier pour manipuler les archives PMTiles du projet (extraction, inspection). Utilisé par `scripts/build_loire_pmtiles.py` pour regénérer `pmtiles/loire.pmtiles`. Voir [README PMTiles](../README.md) pour la restauration après `git clone`, le serveur `serve.py` / `start.bat`, et la configuration `levelDiff: 0` dans `index.html`.
+> **Cartoff :** placer ici le binaire Windows `pmtiles.exe` (go-pmtiles v1.31.2). Il n’est pas versionné. `extract.py` et `scripts/build_loire_pmtiles.py` l’appellent pour créer une archive. La consultation d’un fond déjà présent n’en a pas besoin. `levelDiff: 0` est dans `js/basemap.js`. Voir [README PMTiles](../README.md).
 
 The single-file utility for creating and working with [PMTiles](https://github.com/protomaps/PMTiles) archives.
 

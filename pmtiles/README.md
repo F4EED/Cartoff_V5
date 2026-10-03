@@ -79,7 +79,7 @@ python serve.py -p 8000
 
 Depuis la racine du dépôt — voir aussi [README.md](../README.md).
 
-Le serveur `serve.py` gère les requêtes **HTTP Range** (réponse 206) et l’API `/api/files`, `/api/extract`, `/api/jobs/<id>`. Au démarrage, il avertit s’il n’y a aucune archive.
+Le serveur `serve.py` gère les requêtes **HTTP Range** (réponse 206) et l’API `/api/files`, `/api/extract`, `/api/jobs/<id>`, `/api/layers/<nom>`. Au démarrage, il avertit s’il n’y a aucune archive.
 
 ⚠️ **Ne pas utiliser** `python -m http.server` : pas de support HTTP Range → fond gris.
 
@@ -93,7 +93,7 @@ Avant d’afficher un fond, le client sonde `Range: bytes=0-16383` et exige une 
 
 ### Extraire une zone depuis la carte
 
-Dans le panneau **Fond de carte** : **Sélectionner une zone**. La carte quitte l’emprise Loire et affiche la France (réseau routier Protomaps, villes principales). Quatre clics, nom et zooms, puis **Extraire**. Annuler revient au fond précédent. `extract.py` appelle `pmtiles/tools/pmtiles.exe` sur le dernier build Protomaps (réseau requis, une extraction à la fois). Le fichier est ensuite proposé dans le menu et affiché.
+Dans le panneau **Fond de carte** : **Sélectionner une zone**. La carte quitte l’emprise du fond local et affiche la France (réseau routier Protomaps, villes principales). Sans réseau, l’aperçu retombe sur l’atlas local (départements et villes). Quatre clics, nom et zooms, puis **Extraire**. Annuler revient au fond précédent. `extract.py` appelle `pmtiles/tools/pmtiles.exe` sur le dernier build Protomaps (réseau requis, une extraction à la fois), puis `zone_layers.py` écrit les calques OSM et le DFCI dans `geojson/zones/<nom>/`. Le menu de droite suit l’archive affichée. L’altitude reste celle du 42.
 
 ### Autre gros fichier : altitude
 
@@ -103,7 +103,7 @@ Le MNT Copernicus (`elevation/loire_elev.bin`, ~58 Mo) suit le même principe : 
 
 ## Créer un PMTiles pour votre région
 
-La procédure ci-dessous généralise l’exemple Loire. Le dépôt fournit `scripts/build_loire_pmtiles.py` et `pmtiles/tools/pmtiles.exe` (go-pmtiles).
+La procédure ci-dessous généralise l’exemple Loire. Le dépôt fournit `scripts/build_loire_pmtiles.py`. Le binaire `pmtiles/tools/pmtiles.exe` (go-pmtiles v1.31.2) n’est pas versionné : le placer dans ce dossier avant une extraction ou une régénération. Voir le [README](../README.md).
 
 ### 1. Emprise et niveaux de zoom
 
@@ -146,9 +146,9 @@ python scripts/unpack_large_file.py pmtiles/ma-region.pmtiles.manifest.json
 
 ### 4. Utiliser l’archive
 
-Déposez le `.pmtiles` dans `pmtiles/` (ou laissez l’extraction carte l’y écrire) puis rechargez la page. Le menu **Fond de carte** le liste via `GET /api/files`. L’emprise et le zoom minimal viennent de l’en-tête : il n’y a plus d’URL ni de bbox à coder dans `index.html`.
+Déposez le `.pmtiles` dans `pmtiles/` (ou laissez l’extraction carte l’y écrire) puis rechargez la page. Le menu **Fond de carte** le liste via `GET /api/files`. L’emprise et le zoom minimal viennent de l’en-tête (`js/basemap.js`, `levelDiff: 0`).
 
-`start.bat` reconstitue toujours `loire.pmtiles` s’il manque. Les calques GeoJSON, le DFCI et l’altitude restent ceux de la Loire : pour une autre région, il faut encore préparer ces données à part.
+`start.bat` reconstitue toujours `loire.pmtiles` s’il manque. Une archive seulement déposée à la main n’a pas de catalogue OSM/DFCI : le menu reste sur les fichiers du 42. Une extraction depuis la carte produit ce catalogue (`GET /api/layers/<nom>`). L’altitude Copernicus reste celle du département 42.
 
 `.gitignore` ignore déjà `pmtiles/*.pmtiles`. Versionnez les morceaux et le manifeste, pas l’archive complète.
 
@@ -213,7 +213,7 @@ git add pmtiles/loire.pmtiles.part* pmtiles/loire.pmtiles.manifest.json
 | `existe déjà` | Utilisez `--force` ou supprimez l’ancien `loire.pmtiles` avant de relancer. |
 | Fond gris, protocole `file://` | Ouvrez **http://localhost:8000/** — lancez `start.bat` ou `python serve.py`. |
 | Fond gris, `python -m http.server` | Fermez ce serveur ; utilisez `serve.py` (HTTP Range requis). |
-| Fond gris, bon serveur Cartoff | Vérifiez `levelDiff: 0` dans `index.html` ; confirmez que `loire.pmtiles` existe (`unpack_large_file.py`). |
+| Fond gris, bon serveur Cartoff | Vérifiez `levelDiff: 0` dans `js/basemap.js` ; confirmez que `loire.pmtiles` existe (`unpack_large_file.py`). |
 | Message « HTTP Range requis » | Le serveur ne renvoie pas 206 ; utilisez `serve.py` ou `start.bat`. |
 | Zoom trop faible (fond gris) | Les tuiles détaillées commencent au zoom **9** ; la carte ne descend pas en dessous. |
 | Port 8000 occupé | `start.bat` tue les processus sur ce port ; sinon `netstat -ano \| findstr :8000`. |
