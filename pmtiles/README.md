@@ -79,6 +79,13 @@ python serve.py -p 8000
 
 Depuis la racine du dépôt — voir aussi [README.md](../README.md).
 
+L’image Docker fait la même reconstitution au moment du `docker build`, puis lance `serve.py` sur le port 8000 :
+
+```bash
+docker build -t cartoff .
+docker run --rm -p 8000:8000 cartoff
+```
+
 Le serveur `serve.py` gère les requêtes **HTTP Range** (réponse 206) et l’API `/api/files`, `/api/extract`, `/api/jobs/<id>`, `/api/layers/<nom>`. Au démarrage, il avertit s’il n’y a aucune archive.
 
 ⚠️ **Ne pas utiliser** `python -m http.server` : pas de support HTTP Range → fond gris.

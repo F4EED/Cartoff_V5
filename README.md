@@ -61,6 +61,15 @@ python3 serve.py -p 8000
 
 Ouvrir **http://localhost:8000/** dans le navigateur.
 
+Image Docker (`Dockerfile`, Python 3.12) : à la construction, `scripts/unpack_large_file.py` reconstitue `loire.pmtiles`. Le conteneur lance `serve.py` sur le port 8000. L’image embarque la page, les scripts, `css/leaflet.css`, `js/leaflet.js` et les calques `geojson/D42/`.
+
+```bash
+docker build -t cartoff .
+docker run --rm -p 8000:8000 cartoff
+```
+
+La grille d’altitude, le binaire go-pmtiles et les zones déjà extraites restent sur l’hôte (`.dockerignore`). Pour les avoir dans le conteneur, les préparer avec `install.bat` ou `./install.sh`, puis monter `elevation/` et `pmtiles/tools/`.
+
 L’installation télécharge aussi le MNT Copernicus de la Loire (`elevation/loire_elev.bin`, environ 58 Mo). Pour le régénérer seul :
 
 ```bash
@@ -87,6 +96,7 @@ Une archive PMTiles est un seul fichier, parfois très gros. Le navigateur n’e
 | Méthode | HTTP Range | Fond de carte |
 |---------|------------|---------------|
 | `start.bat` ou `python serve.py` | Oui | OK |
+| Image Docker (`docker run -p 8000:8000`) | Oui | OK (`loire.pmtiles` reconstitué dans l’image) |
 | `python -m http.server` | Non | Fond gris |
 | Fichier local (`file://`) | Non | Fond gris |
 
@@ -130,8 +140,10 @@ Les calques OSM, le DFCI et l’altitude Copernicus suivent la zone extraite (`g
 | Chemin | Rôle |
 |--------|------|
 | `index.html` | Balisage de la page : menus, panneaux, balises de script |
+| `css/leaflet.css`, `js/leaflet.js` | Leaflet 1.9.4, une seule copie, sans fichiers `.map` |
 | `css/cartoff.css` | Style de l’interface |
 | `js/cartoff-app.js` | Carte, calques, constats, recherche, menus |
+| `Dockerfile` | Image Python 3.12 : copie l’application, reconstitue `loire.pmtiles`, lance `serve.py` |
 | `js/basemap.js` | Liste, sonde Range, lit l’en-tête, affiche le fond (`levelDiff: 0`), suspend la vue locale pendant la sélection |
 | `js/zone-overview.js` | Aperçu France (chevelu + villes, atlas en secours) |
 | `js/zone-extract.js` | Quatre clics, fenêtre, suivi du job |

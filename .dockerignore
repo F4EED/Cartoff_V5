@@ -1,0 +1,11 @@
+.git
+.githooks
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+pmtiles/*.pmtiles
+pmtiles/tools/pmtiles.exe
+pmtiles/tools/pmtiles
+elevation/loire_elev.bin
+elevation/zones
+geojson/zones

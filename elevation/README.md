@@ -17,6 +17,8 @@ Dimensions typiques après génération : **5401 × 5400** cellules (~58 Mo).
 
 Une extraction PMTiles depuis la carte produit en plus `elevation/zones/<nom>/elev.meta.json` et `elev.bin` pour l’emprise choisie (dossier non versionné). Le pas reste d’environ 30 m tant que le côté tient dans 5 400 pixels ; au-delà il s’élargit. Revenir sur le fond Loire recharge `elevation/loire_elev.bin`. Si la grille de zone manque, la Loire est utilisée là où elle couvre.
 
+L’image Docker sert la carte et les calques du 42. `elevation/loire_elev.bin` et `elevation/zones/` sont exclus du build (`.dockerignore`) : l’altitude se prépare sur l’hôte avec `install.bat` ou `./install.sh`.
+
 Pour régénérer seulement la Loire :
 
 **Prérequis :** Python 3, `rasterio`, `numpy`

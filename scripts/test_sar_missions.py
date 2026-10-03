@@ -535,21 +535,25 @@ def test_store_roundtrip_aeronef_fix():
 def test_index_wiring():
 
     html = (ROOT / "index.html").read_text(encoding="utf-8")
+    app = (ROOT / "js" / "cartoff-app.js").read_text(encoding="utf-8")
+    css = (ROOT / "css" / "cartoff.css").read_text(encoding="utf-8")
 
     assert "js/sar-types.js" in html
 
     assert "js/sar-missions.js" in html
 
-    assert "setupFloatingPanelDrag" in html
+    assert "js/cartoff-app.js" in html
+
+    assert "setupFloatingPanelDrag" in app
 
     assert "Missions SAR" in html
     assert "operationRechercheBlock" in html
-    assert "appendSecoursContextMenu" in html
-    assert "OPÉRATION DE SECOURS" in html
+    assert "appendSecoursContextMenu" in app
+    assert "OPÉRATION DE SECOURS" in app
 
-    assert "CartoffSar.init" in html
+    assert "CartoffSar.init" in app
 
-    assert "sarPane" in html
+    assert "sarPane" in app
 
     assert "sarPanelAzimuth" in html
 
@@ -557,9 +561,9 @@ def test_index_wiring():
 
     assert "Trait plein = signal direct" in html
 
-    assert "sar-marker-station-df" in html
+    assert "sar-marker-station-df" in css
 
-    assert "sar-marker-fixe-estime" in html
+    assert "sar-marker-fixe-estime" in css
 
     assert "sarComputeIntersectionBtn" in (ROOT / "js" / "sar-missions.js").read_text(encoding="utf-8")
     assert "sarLayerCheckbox" in (ROOT / "js" / "sar-missions.js").read_text(encoding="utf-8")
@@ -608,9 +612,11 @@ def test_releve_df_station_discovery():
 
     assert "invokeReleveDfFromMenu" in text
 
-    assert "getLastRightClickLatLng" in (ROOT / "index.html").read_text(encoding="utf-8")
+    app = (ROOT / "js" / "cartoff-app.js").read_text(encoding="utf-8")
 
-    assert "lastRightClickLatLng" in (ROOT / "index.html").read_text(encoding="utf-8")
+    assert "getLastRightClickLatLng" in app
+
+    assert "lastRightClickLatLng" in app
 
     assert "function alertNoStationDf(mission)" in text
 

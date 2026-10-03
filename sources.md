@@ -13,7 +13,7 @@ Dernière mise à jour : octobre 2026 (Cartoff 5.0.1).
 | `pmtiles/*.pmtiles` | Tuiles vectorielles au format [PMTiles](https://github.com/protomaps/PMTiles), affichées via [protomaps-leaflet](https://github.com/protomaps/PMTiles) (`flavor: light`, `lang: fr`, **`levelDiff: 0`**, `maxDataZoom` lu dans l’archive) | Données [OpenStreetMap](https://www.openstreetmap.org/). Défaut : `loire.pmtiles` (zoom tuiles **9–15**, surzoom carte jusqu’à 18). Autres archives : menu **Fond de carte**, ou extraction d’une zone (`extract.py`, repris de [F4EED/pmtiles](https://github.com/F4EED/pmtiles)). Fichier Loire découpé pour GitHub — voir `pmtiles/README.md`. |
 | Tuiles raster OSM en ligne | [OpenStreetMap](https://www.openstreetmap.org/) — `tile.openstreetmap.org` | Non utilisées. Le fond est le PMTiles local. L’attribution OSM est dans `js/cartoff-app.js`. |
 
-**Serveur requis :** `serve.py` ou `start.bat` (HTTP Range). Voir `pmtiles/README.md` pour `levelDiff: 0` et le dépannage fond gris.
+**Serveur requis :** `serve.py`, `start.bat`, ou l’image `Dockerfile` (HTTP Range, port 8000). Voir `pmtiles/README.md` pour `levelDiff: 0` et le dépannage fond gris.
 
 ---
 
@@ -100,7 +100,7 @@ Les calques suffixés `*_osm_42` sont extraits du département 42 (`area["ISO316
 
 ### Calques branchés
 
-Tous les calques ci-dessous sont listés dans `geojsonFiles` (`js/cartoff-app.js`). **Tous sont en lazy load** (sauf le fond PMTiles, toujours actif). Au démarrage ils pointent vers `geojson/D42/`. Après une extraction, `zone_layers.py` écrit les mêmes thèmes dans `geojson/zones/<nom>/` (Overpass sur la bbox, DFCI calculé en Lambert II étendu) et le menu suit l’archive via `GET /api/layers/<nom>`. Revenir sur `loire` restaure le 42. Ces catalogues de zone ne sont pas versionnés (`.gitignore`).
+Tous les calques ci-dessous sont listés dans `geojsonFiles` (`js/cartoff-app.js`). **Tous sont en lazy load** (sauf le fond PMTiles, toujours actif). Au démarrage ils pointent vers `geojson/D42/`, qui ne contient que le département 42. Les contours communaux sont `communes_contours_osm_42.geojson`. Après une extraction, `zone_layers.py` écrit les mêmes thèmes dans `geojson/zones/<nom>/` (Overpass sur la bbox, DFCI calculé en Lambert II étendu) et le menu suit l’archive via `GET /api/layers/<nom>`. Revenir sur `loire` restaure le 42. Ces catalogues de zone ne sont pas versionnés (`.gitignore`).
 
 | Calque (UI) | Fichier | Script d'export | Critères OSM principaux |
 |-------------|---------|-----------------|-------------------------|
@@ -340,7 +340,7 @@ D'anciens calques issus de la **BDTOPO** de l'[IGN](https://www.ign.fr/) (retrai
 
 | Composant | Source | Usage |
 |-----------|--------|-------|
-| [Leaflet](https://leafletjs.com/) | BSD-2-Clause | Carte interactive |
+| [Leaflet](https://leafletjs.com/) 1.9.4 | BSD-2-Clause | Carte interactive. Une seule copie : `js/leaflet.js` et `css/leaflet.css` (sans sources ni fichiers `.map`) |
 | [protomaps-leaflet](https://github.com/protomaps/PMTiles) | Protomaps LLC | Affichage du fond PMTiles (`levelDiff: 0`) |
 | [PMTiles](https://github.com/protomaps/PMTiles) | Protomaps LLC | Format de tuiles vectorielles monofichier |
 | [go-pmtiles](https://github.com/protomaps/go-pmtiles) | Protomaps LLC | Outil CLI (`pmtiles/tools/pmtiles.exe`) |
