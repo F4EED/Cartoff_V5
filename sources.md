@@ -2,7 +2,7 @@
 
 Ce document recense les sources utilisées dans le projet **Cartoff** (cartographie hors ligne pour la gestion de crise, département de la Loire — 42).
 
-Dernière mise à jour : octobre 2026 (Cartoff 5.0.1).
+Dernière mise à jour : octobre 2026 (Cartoff 5.0.2).
 
 ---
 

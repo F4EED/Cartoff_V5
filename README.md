@@ -275,8 +275,8 @@ Semver (`MAJEUR.MINEUR.PATCH`), centralisé dans **`version.json`**.
 
 ```json
 {
-  "version": "5.0.1",
-  "commit": "758d6c6",
+  "version": "5.0.2",
+  "commit": "d53a730",
   "date": "2026-10-03",
   "build": "2026-10-03"
 }
