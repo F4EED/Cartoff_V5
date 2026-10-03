@@ -355,34 +355,38 @@
 
   let elevationGrid = null;
   let elevationRequest = 0;
+  const elevationByRoot = new Map();
+
+  function elevationPair(root) {
+    return root === 'elevation'
+      ? ['loire_elev.meta.json', 'loire_elev.bin']
+      : ['elev.meta.json', 'elev.bin'];
+  }
+
+  async function readElevationPair(root) {
+    const [metaName, binName] = elevationPair(root);
+    const metaRes = await fetch(`${root}/${metaName}`);
+    if (!metaRes.ok) return null;
+    const meta = await metaRes.json();
+    const binRes = await fetch(`${root}/${binName}`);
+    if (!binRes.ok) return null;
+    return { meta, heights: new Int16Array(await binRes.arrayBuffer()) };
+  }
 
   async function loadElevationGrid(baseUrl) {
     const request = ++elevationRequest;
     const root = (baseUrl || 'elevation').replace(/\/$/, '');
-    const pairs = [
-      ['elev.meta.json', 'elev.bin'],
-      ['loire_elev.meta.json', 'loire_elev.bin']
-    ];
-    let lastError = 'fichiers altitude absents';
-    for (let i = 0; i < pairs.length; i++) {
-      try {
-        const metaRes = await fetch(`${root}/${pairs[i][0]}`);
-        const binRes = await fetch(`${root}/${pairs[i][1]}`);
-        if (request !== elevationRequest) return false;
-        if (!metaRes.ok || !binRes.ok) throw new Error('fichiers altitude absents');
-        const meta = await metaRes.json();
-        const buf = await binRes.arrayBuffer();
-        if (request !== elevationRequest) return false;
-        elevationGrid = { meta, heights: new Int16Array(buf) };
-        return true;
-      } catch (err) {
-        lastError = err.message || String(err);
-      }
+    if (!elevationByRoot.has(root)) {
+      elevationByRoot.set(root, readElevationPair(root).catch(() => null));
     }
+    const grid = await elevationByRoot.get(root);
     if (request !== elevationRequest) return false;
-    console.warn('Altitude offline non disponible :', lastError);
-    elevationGrid = null;
-    return false;
+    if (!grid) {
+      elevationGrid = null;
+      return false;
+    }
+    elevationGrid = grid;
+    return true;
   }
 
   function getElevation(lat, lon) {

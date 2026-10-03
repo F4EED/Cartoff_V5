@@ -264,10 +264,15 @@
           return;
         }
         if (job.status === "queued" || job.status === "running") {
-          const tail = (job.log || "").trim().split("\n").slice(-2).join(" · ");
+          const rawLog = job.log || "";
+          const tail = rawLog.trim().split("\n").slice(-2).join(" · ");
+          const headline = rawLog.indexOf("Calques OSM") >= 0
+            ? "Fond <strong>" + escapeHtml(job.name) + ".pmtiles</strong> enregistré. Chargement des calques OSM…"
+            : rawLog.indexOf("Altitude") >= 0 || rawLog.indexOf("Copernicus") >= 0
+              ? "Calques enregistrés. Grille d'altitude Copernicus…"
+              : "Extraction de <strong>" + escapeHtml(job.name) + ".pmtiles</strong> en cours…";
           setStatus(
-            "Extraction de <strong>" + escapeHtml(job.name) + ".pmtiles</strong> en cours…" +
-              (tail ? '<span class="log">' + escapeHtml(tail) + "</span>" : ""),
+            headline + (tail ? '<span class="log">' + escapeHtml(tail) + "</span>" : ""),
             "busy"
           );
           return;

@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import json
 import math
+import re
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -20,10 +22,12 @@ ROOT = Path(__file__).resolve().parent
 ZONES_DIR = ROOT / "geojson" / "zones"
 
 OVERPASS_ENDPOINTS = [
-    "https://overpass.kumi.systems/api/interpreter",
     "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
 ]
 USER_AGENT = "Cartoff/1.0 (crisis mapping)"
+# Un serveur muet ne doit pas bloquer chaque calque pendant le timeout HTTP complet.
+_ENDPOINT_CHOICE: dict = {"until": 0.0, "urls": []}
 
 # Au-delà, le calque 2 km devient trop lourd pour le navigateur (la Loire en a ~5 000).
 MAX_DFCI_2KM = 8000
@@ -301,19 +305,114 @@ def build_dfci(west: float, south: float, east: float, north: float, step_km: in
     return {"type": "FeatureCollection", "features": features}
 
 
+def _status_url(interpreter: str) -> str:
+    if interpreter.endswith("/interpreter"):
+        return interpreter[: -len("/interpreter")] + "/status"
+    return interpreter + "/status"
+
+
+def _server_accepts(interpreter: str) -> bool:
+    """Vrai si le statut Overpass répond et annonce un créneau libre."""
+    request = urllib.request.Request(
+        _status_url(interpreter),
+        headers={"User-Agent": USER_AGENT},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=6) as response:
+            text = response.read().decode("utf-8", "replace").lower()
+    except Exception:  # noqa: BLE001
+        return False
+    return "available now" in text or "slots available" in text
+
+
+def _preferred_endpoints() -> list[str]:
+    now = time.time()
+    cached = _ENDPOINT_CHOICE["urls"]
+    if cached and now < _ENDPOINT_CHOICE["until"]:
+        return list(cached)
+    ready = [url for url in OVERPASS_ENDPOINTS if _server_accepts(url)]
+    chosen = ready or list(OVERPASS_ENDPOINTS)
+    _ENDPOINT_CHOICE["until"] = now + 180
+    _ENDPOINT_CHOICE["urls"] = chosen
+    return list(chosen)
+
+
 def _fetch_overpass(query: str) -> dict:
+    """Interroge un serveur libre. Deux essais courts, puis l'appelant découpe l'emprise."""
     payload = urllib.parse.urlencode({"data": query}).encode("utf-8")
     headers = {"User-Agent": USER_AGENT}
     last_error = None
-    for url in OVERPASS_ENDPOINTS:
+    for attempt in range(2):
+        url = _preferred_endpoints()[0]
         request = urllib.request.Request(url, data=payload, method="POST", headers=headers)
         try:
-            with urllib.request.urlopen(request, timeout=300) as response:
-                return json.loads(response.read().decode("utf-8"))
+            with urllib.request.urlopen(request, timeout=90) as response:
+                data = json.loads(response.read().decode("utf-8"))
+            remark = (data.get("remark") or "").lower()
+            if "timed out" in remark or "timeout" in remark:
+                raise RuntimeError(data.get("remark"))
+            if remark and not data.get("elements"):
+                raise RuntimeError(data.get("remark"))
+            return data
+        except urllib.error.HTTPError as exc:
+            last_error = exc
+            _ENDPOINT_CHOICE["until"] = 0.0
+            if exc.code in (429, 502, 503, 504) and attempt == 0:
+                time.sleep(8)
+                continue
+            break
         except Exception as exc:  # noqa: BLE001
             last_error = exc
-            time.sleep(1)
+            _ENDPOINT_CHOICE["until"] = 0.0
+            if attempt == 0:
+                time.sleep(5)
+                continue
+            break
     raise RuntimeError(f"Overpass indisponible : {last_error}")
+
+
+def _collect_elements(selectors, west, south, east, north, mode, note=None, depth=0) -> list:
+    """Récupère les objets. Si l'emprise est refusée, elle est coupée en quatre."""
+    try:
+        data = _fetch_overpass(_overpass_query(selectors, west, south, east, north, mode))
+        return data.get("elements") or []
+    except Exception:
+        width = east - west
+        height = north - south
+        if depth >= 2 or max(width, height) < 1.0:
+            raise
+        mid_lon = (west + east) / 2
+        mid_lat = (south + north) / 2
+        if note:
+            note(
+                f"    emprise {width:.1f}°×{height:.1f}° trop lourde, "
+                f"découpage {depth + 1}/2"
+            )
+        boxes = (
+            (west, south, mid_lon, mid_lat),
+            (mid_lon, south, east, mid_lat),
+            (west, mid_lat, mid_lon, north),
+            (mid_lon, mid_lat, east, north),
+        )
+        seen = set()
+        merged = []
+        failures = 0
+        for box in boxes:
+            try:
+                part = _collect_elements(selectors, *box, mode, note, depth + 1)
+            except Exception:
+                failures += 1
+                continue
+            for element in part:
+                key = (element.get("type"), element.get("id"))
+                if key in seen:
+                    continue
+                seen.add(key)
+                merged.append(element)
+            time.sleep(1)
+        if failures == 4:
+            raise RuntimeError("Overpass indisponible sur les quatre quarts")
+        return merged
 
 
 def _way_coords(geometry: list) -> list:
@@ -471,10 +570,53 @@ def _elements_to_geojson(elements: list, mode: str) -> dict:
     return {"type": "FeatureCollection", "features": features}
 
 
+def _selector_matches(element: dict, selector: str) -> bool:
+    prefix = selector.split("[", 1)[0]
+    if prefix == "relation" and element.get("type") != "relation":
+        return False
+    if prefix in {"node", "way"} and element.get("type") != prefix:
+        return False
+    tags = element.get("tags") or {}
+    for key, value in re.findall(r'\["([^"]+)"(?:="([^"]*)")?\]', selector):
+        if key not in tags:
+            return False
+        if value and str(tags.get(key)) != value:
+            return False
+    return True
+
+
+# Ces calques sont lourds : une requête chacun. Les autres partagent une requête par mode.
+HEAVY_FILES = {
+    "communes_contours.geojson",
+    "zones_industrielles.geojson",
+    "sites_industriels.geojson",
+    "zones_habitation.geojson",
+}
+
+
+def _layer_batches() -> list[list]:
+    heavy = []
+    areas = []
+    points = []
+    for layer in OSM_LAYERS:
+        if layer[2] in HEAVY_FILES or layer[3] == "commune":
+            heavy.append([layer])
+        elif layer[3] == "area":
+            areas.append(layer)
+        else:
+            points.append(layer)
+    batches = list(heavy)
+    if areas:
+        batches.append(areas)
+    if points:
+        batches.append(points)
+    return batches
+
+
 def _overpass_query(selectors: list[str], west, south, east, north, mode: str) -> str:
     box = f"({south},{west},{north},{east})"
     body = "\n".join(f"  {selector}{box};" for selector in selectors)
-    timeout = 300 if mode in {"area", "commune"} else 180
+    timeout = 90 if mode in {"area", "commune"} else 60
     output = "out geom;" if mode == "commune" else ("out geom tags;" if mode == "area" else "out center tags;")
     return f"[out:json][timeout:{timeout}];\n(\n{body}\n);\n{output}\n"
 
@@ -496,26 +638,51 @@ def build_zone_layers(name: str, west: float, south: float, east: float, north: 
     layers: dict[str, list] = {}
     errors: list[str] = []
 
-    note(f"Calques OSM pour {name} ({west:.3f},{south:.3f} → {east:.3f},{north:.3f})…")
-    for index, (group, title, filename, mode, selectors) in enumerate(OSM_LAYERS, start=1):
-        note(f"  OSM {index}/{len(OSM_LAYERS)} : {title}")
-        entry = {
+    def remember(group: str, title: str, filename: str, count: int) -> None:
+        written[filename] = {
             "name": title,
             "file": f"geojson/zones/{name}/{filename}",
-            "count": 0,
+            "count": count,
+            "group": group,
         }
+
+    note(f"Calques OSM pour {name} ({west:.3f},{south:.3f} -> {east:.3f},{north:.3f})…")
+    written: dict[str, dict] = {}
+    batches = _layer_batches()
+    for index, batch in enumerate(batches):
+        titles = ", ".join(layer[1] for layer in batch)
+        note(f"  Requête OSM {index + 1}/{len(batches)} ({len(batch)} calque(s)) : {titles}")
+        mode = batch[0][3]
+        selectors = [selector for layer in batch for selector in layer[4]]
         try:
-            payload = _fetch_overpass(_overpass_query(selectors, west, south, east, north, mode))
-            collection = _elements_to_geojson(payload.get("elements") or [], mode)
-            _write(folder / filename, collection)
-            entry["count"] = len(collection["features"])
-            note(f"    {entry['count']} objets")
+            elements = _collect_elements(
+                selectors, west, south, east, north, mode, note
+            )
+            for group, title, filename, layer_mode, layer_selectors in batch:
+                matched = [
+                    element for element in elements
+                    if any(_selector_matches(element, selector) for selector in layer_selectors)
+                ]
+                collection = _elements_to_geojson(matched, layer_mode)
+                _write(folder / filename, collection)
+                remember(group, title, filename, len(collection["features"]))
+                note(f"    {title} : {written[filename]['count']} objets")
         except Exception as exc:  # noqa: BLE001
-            errors.append(f"{title} : {exc}")
-            _write(folder / filename, {"type": "FeatureCollection", "features": []})
-            note(f"    échec : {exc}")
-        layers.setdefault(group, []).append(entry)
-        time.sleep(1)
+            for group, title, filename, _layer_mode, _layer_selectors in batch:
+                errors.append(f"{title} : {exc}")
+                _write(folder / filename, {"type": "FeatureCollection", "features": []})
+                remember(group, title, filename, 0)
+                note(f"    {title} : échec ({exc})")
+        if index + 1 < len(batches):
+            time.sleep(2)
+
+    for group, title, filename, _mode, _selectors in OSM_LAYERS:
+        entry = written[filename]
+        layers.setdefault(group, []).append({
+            "name": entry["name"],
+            "file": entry["file"],
+            "count": entry["count"],
+        })
 
     note("Carroyage DFCI…")
     dfci_entries = []

@@ -124,7 +124,7 @@ Pour chaque archive, le client lit l’en-tête PMTiles (emprise, `minZoom`, `ma
 1. **Sélectionner une zone.** La carte quitte l’emprise du fond local. Elle affiche la France : réseau routier Protomaps (le chevelu) et les villes principales (préfectures dès l’aperçu, sous-préfectures en zoomant). Les contours de départements restent en surimpression.
 2. Quatre clics délimitent le secteur. L’ordre est sans importance : les sommets sont réordonnés.
 3. Donner un nom et une plage de zooms, puis **Extraire**.
-4. L’avancement s’affiche dans le panneau. À la fin, le nouveau fichier est proposé dans le menu et affiché. Les calques OSM (communes, urgence, santé, services, toponymie) et le carroyage DFCI de la même emprise sont écrits dans `geojson/zones/<nom>/`. L’altitude Copernicus de la même emprise est écrite dans `elevation/zones/<nom>/`. Le menu et l’altitude suivent l’archive. Revenir sur `loire` restaure les calques et la grille de la Loire.
+4. L’avancement s’affiche dans le panneau. À la fin, le nouveau fichier est proposé dans le menu et affiché. Les calques OSM (communes, urgence, santé, services, toponymie) et le carroyage DFCI de la même emprise sont écrits dans `geojson/zones/<nom>/`. Cette interrogation Overpass a lieu une fois, pendant l’extraction. Ensuite, choisir ce fond relit ces fichiers. L’altitude Copernicus de la même emprise est écrite dans `elevation/zones/<nom>/`. Le menu et l’altitude suivent l’archive. Revenir sur `loire` restaure les calques et la grille de la Loire.
 5. **Annuler** (ou Échap dans la fenêtre) revient au fond et à la vue précédents.
 
 Hors ligne, ou si le relais vers Protomaps échoue, l’aperçu retombe sur un atlas : départements en aplat et les mêmes villes. On peut encore dessiner la zone ; l’extraction, elle, a besoin du réseau.
@@ -133,7 +133,7 @@ Le chevelu n’est pas téléchargé en entier. Le navigateur demande de petites
 
 Compter quelques minutes et de l’ordre de 20 à 200 Mo pour un département aux zooms 9–15. Une seule extraction à la fois. La zone est bornée à **12° de côté**. Les zooms de tuiles vont de 0 à **15**.
 
-Les calques OSM, le DFCI et l’altitude Copernicus suivent la zone extraite (`geojson/zones/<nom>/`, `elevation/zones/<nom>/`).
+Les calques OSM, le DFCI et l’altitude Copernicus suivent la zone extraite (`geojson/zones/<nom>/`, `elevation/zones/<nom>/`). Les calques légers partagent une requête Overpass. Si l’emprise est refusée, elle est coupée en quatre, jusqu’à deux fois. Le carroyage DFCI 2 km est omis au-delà de 8 000 mailles ; les grilles 100 km et 20 km restent. Changer de fond ensuite ne rappelle pas Overpass. L’altitude est lue une fois par archive, puis la souris interroge la grille déjà en mémoire.
 
 ### Fichiers et routes
 
@@ -148,7 +148,7 @@ Les calques OSM, le DFCI et l’altitude Copernicus suivent la zone extraite (`g
 | `js/zone-overview.js` | Aperçu France (chevelu + villes, atlas en secours) |
 | `js/zone-extract.js` | Quatre clics, fenêtre, suivi du job |
 | `extract.py` | Validation, un job à la fois, appel de go-pmtiles, archives produites dans `pmtiles/` |
-| `zone_layers.py` | Après une extraction réussie : calques OSM (Overpass) et carroyage DFCI de l’emprise |
+| `zone_layers.py` | Après une extraction réussie : calques OSM (Overpass groupé, emprise découpée si elle est trop lourde) et carroyage DFCI |
 | `elevation_grid.py` | Grille Copernicus DEM de la Loire à l’installation, et de la zone à l’extraction |
 | `serve.py` | Fichiers statiques, HTTP Range, API JSON |
 | `js/jspdf.umd.min.js`, `js/jspdf.plugin.autotable.min.js` | Export PDF de mission, sans CDN |
@@ -275,7 +275,7 @@ Semver (`MAJEUR.MINEUR.PATCH`), centralisé dans **`version.json`**.
 
 ```json
 {
-  "version": "5.0.2",
+  "version": "5.0.3",
   "commit": "6273b2c",
   "date": "2026-10-03",
   "build": "2026-10-03"
@@ -344,7 +344,8 @@ Création initiale sans incrément : `py -3 scripts/bump_version.py --init`
 ## Limites
 
 - Tant qu’aucune zone n’a été extraite, les calques, le DFCI, la recherche communale et l’altitude couvrent la **Loire (42)**. Une zone extraite remplace les calques OSM, le DFCI et l’altitude du menu. Si la grille de la zone manque, l’altitude Loire est utilisée là où elle couvre.
-- **Une extraction à la fois.** Zone max **12°** de côté. Tuiles jusqu’au zoom **15**, surzoom d’affichage jusqu’à **18**.
+- **Une extraction à la fois.** Zone max **12°** de côté. Tuiles jusqu’au zoom **15**, surzoom d’affichage jusqu’à **18**. Overpass n’est rappelé qu’à cette extraction, ou si l’archive est remplacée.
+- Le carroyage DFCI 2 km d’une zone est omis au-delà de **8 000** mailles.
 - L’aperçu France et l’extraction demandent Internet. La consultation d’une archive déjà sur le disque, les calques, les constats, les missions et l’export PDF, non.
 - La déclinaison proposée est une approximation pour la France (Est positif, époque 2026). Elle se corrige dans le panneau de relèvement.
 - Redémarrer `serve.py` oublie les jobs en cours. Les `.pmtiles` déjà écrits restent.

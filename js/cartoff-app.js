@@ -81,16 +81,19 @@ let communeIndexLoadScheduled = false;
 let communeLoadToken = 0;
 let situationDataLoaded = false;
 
+let elevationFor = '';
+
 function useElevationForBasemap(name) {
+  const key = name && name !== 'loire' ? name : 'loire';
+  if (key === elevationFor) return;
+  elevationFor = key;
   const token = ++elevationToken;
   elevationReady = false;
-  const zoneUrl = name && name !== 'loire'
-    ? 'elevation/zones/' + encodeURIComponent(name)
-    : '';
   const loadLoire = () => CartoffCoords.loadElevationGrid('elevation');
-  const pending = zoneUrl
-    ? CartoffCoords.loadElevationGrid(zoneUrl).then(ok => ok ? true : loadLoire())
-    : loadLoire();
+  const pending = key === 'loire'
+    ? loadLoire()
+    : CartoffCoords.loadElevationGrid('elevation/zones/' + encodeURIComponent(key))
+      .then(ok => ok ? true : loadLoire());
   pending.then(ok => {
     if (token !== elevationToken) return;
     elevationReady = ok;
@@ -99,7 +102,7 @@ function useElevationForBasemap(name) {
 }
 
 function ensureElevationLoaded() {
-  useElevationForBasemap('loire');
+  if (!elevationFor) useElevationForBasemap('loire');
 }
 
 window.cartoffUseElevation = useElevationForBasemap;
@@ -139,7 +142,6 @@ function renderCoordsBox(latlng, options) {
 
 function scheduleCoordsUpdate(latlng) {
   lastPointer = latlng;
-  ensureElevationLoaded();
   scheduleCommuneIndexLoad();
   if (mapIsInteracting) return;
   clearTimeout(coordsUpdateTimer);
@@ -301,6 +303,7 @@ window.addEventListener('orientationchange', () => {
 
 map.whenReady(() => {
   lastPointer = map.getCenter();
+  ensureElevationLoaded();
   refreshCoordsFromMap();
 });
 
@@ -313,10 +316,7 @@ map.on('touchmove', e => { if (e.latlng) updateCoords(e.latlng); });
 map.on('movestart zoomstart', () => { mapIsInteracting = true; });
 map.on('moveend zoomend', () => {
   mapIsInteracting = false;
-  if (lastPointer) {
-    ensureElevationLoaded();
-    renderCoordsBox(lastPointer);
-  }
+  if (lastPointer) renderCoordsBox(lastPointer);
 });
 
 // Icônes personnalisées

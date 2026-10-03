@@ -417,4 +417,4 @@ python scripts/test_sar_missions.py
 
 ---
 
-*Dernière mise à jour : octobre 2026 — Cartoff 5.0.2, gestion de crise hors ligne.*
+*Dernière mise à jour : octobre 2026 — Cartoff 5.0.3, gestion de crise hors ligne.*

@@ -2,7 +2,7 @@
 
 Ce document recense les sources utilisées dans le projet **Cartoff** (cartographie hors ligne pour la gestion de crise, département de la Loire — 42).
 
-Dernière mise à jour : octobre 2026 (Cartoff 5.0.2).
+Dernière mise à jour : octobre 2026 (Cartoff 5.0.3).
 
 ---
 
@@ -91,16 +91,16 @@ Les listes déroulantes sont alimentées après chargement lazy du calque concer
 
 Les calques suffixés `*_osm_42` sont extraits du département 42 (`area["ISO3166-2"="FR-42"]`) à l'aide de l'[Overpass API](https://wiki.openstreetmap.org/wiki/Overpass_API), via les scripts Python du dossier `scripts/`.
 
-**Points d'accès utilisés :**
+**Points d'accès utilisés** (le premier qui annonce un créneau libre ; un serveur qui ne répond pas en quelques secondes est ignoré). Les calques légers d'une zone extraite partagent une requête (les points ensemble, les surfaces ensemble) au lieu d'un appel par case du menu. Si l'emprise est trop lourde pour Overpass, elle est coupée en quatre, jusqu'à deux fois :
 
-- https://overpass.kumi.systems/api/interpreter
 - https://overpass-api.de/api/interpreter
+- https://overpass.kumi.systems/api/interpreter
 
 **Licence :** [Open Database License (ODbL) 1.0](https://opendatacommons.org/licenses/odbl/) — © contributeurs OpenStreetMap.
 
 ### Calques branchés
 
-Tous les calques ci-dessous sont listés dans `geojsonFiles` (`js/cartoff-app.js`). **Tous sont en lazy load** (sauf le fond PMTiles, toujours actif). Au démarrage ils pointent vers `geojson/D42/`, qui ne contient que le département 42. Les contours communaux sont `communes_contours_osm_42.geojson`. Après une extraction, `zone_layers.py` écrit les mêmes thèmes dans `geojson/zones/<nom>/` (Overpass sur la bbox, DFCI calculé en Lambert II étendu) et le menu suit l’archive via `GET /api/layers/<nom>`. Revenir sur `loire` restaure le 42. Ces catalogues de zone ne sont pas versionnés (`.gitignore`).
+Tous les calques ci-dessous sont listés dans `geojsonFiles` (`js/cartoff-app.js`). **Tous sont en lazy load** (sauf le fond PMTiles, toujours actif). Au démarrage ils pointent vers `geojson/D42/`, qui ne contient que le département 42. Les contours communaux sont `communes_contours_osm_42.geojson`. Après une extraction, `zone_layers.py` écrit les mêmes thèmes dans `geojson/zones/<nom>/` (Overpass sur la bbox, une fois ; DFCI calculé en Lambert II étendu) et le menu suit l’archive via `GET /api/layers/<nom>`. Choisir à nouveau ce fond relit ces fichiers. Revenir sur `loire` restaure le 42. Ces catalogues de zone ne sont pas versionnés (`.gitignore`). L’altitude est chargée une fois par fond, pas à chaque mouvement de souris.
 
 | Calque (UI) | Fichier | Script d'export | Critères OSM principaux |
 |-------------|---------|-----------------|-------------------------|

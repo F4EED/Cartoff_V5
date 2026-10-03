@@ -100,7 +100,7 @@ Avant d’afficher un fond, le client sonde `Range: bytes=0-16383` et exige une 
 
 ### Extraire une zone depuis la carte
 
-Dans le panneau **Fond de carte** : **Sélectionner une zone**. La carte quitte l’emprise du fond local et affiche la France (réseau routier Protomaps, villes principales). Sans réseau, l’aperçu retombe sur l’atlas local (départements et villes). Quatre clics, nom et zooms, puis **Extraire**. Annuler revient au fond précédent. `extract.py` appelle `pmtiles/tools/pmtiles.exe` sur le dernier build Protomaps (réseau requis, une extraction à la fois), puis `zone_layers.py` écrit les calques OSM et le DFCI dans `geojson/zones/<nom>/`, et `elevation_grid.py` écrit l’altitude Copernicus dans `elevation/zones/<nom>/`. Le menu et l’altitude suivent l’archive affichée.
+Dans le panneau **Fond de carte** : **Sélectionner une zone**. La carte quitte l’emprise du fond local et affiche la France (réseau routier Protomaps, villes principales). Sans réseau, l’aperçu retombe sur l’atlas local (départements et villes). Quatre clics, nom et zooms, puis **Extraire**. Annuler revient au fond précédent. `extract.py` appelle `pmtiles/tools/pmtiles.exe` sur le dernier build Protomaps (réseau requis, une extraction à la fois), puis `zone_layers.py` écrit les calques OSM et le DFCI dans `geojson/zones/<nom>/`, et `elevation_grid.py` écrit l’altitude Copernicus dans `elevation/zones/<nom>/`. Overpass n’est interrogé que pendant cette extraction : les calques légers partagent une requête, et une emprise trop lourde est coupée en quatre (deux fois au plus). Le DFCI 2 km est omis au-delà de 8 000 mailles. Choisir ensuite ce fond, ou revenir sur `loire`, relit les fichiers locaux.
 
 ### Autre gros fichier : altitude
 

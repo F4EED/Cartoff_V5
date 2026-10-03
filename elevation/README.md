@@ -48,7 +48,7 @@ Si les fichiers existent déjà, le script s'arrête sauf avec `--force`. La log
 1. Lancer `install.bat` ou `./install.sh`, ou copier `loire_elev.bin` depuis une autre installation.
 2. Lancer l'application via **`start.bat`** (Windows) ou **`python serve.py`** à la racine du projet — le chargement via `fetch` ne fonctionne pas en `file://`, et `python -m http.server` ne gère pas correctement PMTiles (HTTP Range).
 3. Ouvrir **http://localhost:8000/** dans le navigateur.
-4. Déplacer la souris sur la carte : la boîte en bas à gauche affiche **Alt.** (interpolation bilinéaire sur la grille, via `js/coords-utils.js`, debounce 250 ms).
+4. Déplacer la souris sur la carte : la boîte en bas à gauche affiche **Alt.** La grille est chargée une fois au changement de fond (`js/coords-utils.js`). Le survol lit cette grille en mémoire (debounce 250 ms, interpolation bilinéaire) et ne la retélécharge pas.
 
 Hors emprise ou sans fichier binaire : affichage « — » ou « … » selon l'état de chargement.
 
